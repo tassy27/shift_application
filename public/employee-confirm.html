@@ -1,0 +1,162 @@
+﻿<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>提出内容確認 | Shift Aggregation</title>
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="page-header">
+      <h1>提出内容確認 <span class="pill">Employee</span></h1>
+      <p class="subtext">内容を確認して問題なければ提出してください。</p>
+      <div class="top-nav">
+        <button type="button" onclick="location.href='/employee.html'">シフト申請画面に戻る</button>
+        <button type="button" onclick="location.href='/login.html'">ログイン画面</button>
+        <button id="logoutBtn" type="button" style="display:none;">ログアウト</button>
+      </div>
+    </header>
+
+    <section class="card confirm-card">
+      <h2>確認内容</h2>
+      <div class="row">
+        <div><label>申請者</label><input id="employeeView" readonly /></div>
+        <div><label>対象年月</label><input id="yearMonthView" readonly /></div>
+      </div>
+      <label>カレンダー（シフト入力済み日を色付け）</label>
+      <div id="confirmCalendar" class="calendar-grid"></div>
+      <label>シフト日時一覧</label>
+      <ul id="confirmList" class="confirm-list"></ul>
+      <div class="btn-row-2">
+        <button id="backEditBtn" type="button">修正に戻る</button>
+        <button id="confirmSubmitBtn" type="button">この内容で提出する</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>レスポンス</h2>
+      <pre id="out">ready</pre>
+    </section>
+  </div>
+
+  <script src="/js/app-common.js"></script>
+  <script>
+    const out = document.getElementById("out");
+    const employeeView = document.getElementById("employeeView");
+    const yearMonthView = document.getElementById("yearMonthView");
+    const confirmCalendar = document.getElementById("confirmCalendar");
+    const confirmList = document.getElementById("confirmList");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const DRAFT_KEY = "shiftSubmissionDraft";
+    let draft = null;
+    let me = null;
+
+    function show(label, data) {
+      out.textContent = `[${label}]\\n` + JSON.stringify(data, null, 2);
+    }
+
+    function loadDraft() {
+      try {
+        const raw = sessionStorage.getItem(DRAFT_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    }
+
+    function clearDraft() {
+      sessionStorage.removeItem(DRAFT_KEY);
+    }
+
+    function renderConfirm(d) {
+      const [y, m] = d.yearMonth.split("-").map(Number);
+      const firstWd = new Date(y, m - 1, 1).getDay();
+      const last = new Date(y, m, 0).getDate();
+      const memoMap = new Map(
+        d.details.map((x) => {
+          const [start, end] = (x.memo || "09:00-16:00").split("-");
+          return [x.targetDate, `${start}-${end}`];
+        })
+      );
+      const dateSet = new Set(d.details.map((x) => x.targetDate));
+      const head = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+        .map((w) => `<div class="calendar-cell is-head">${w}</div>`)
+        .join("");
+      const cells = [];
+      for (let i = 0; i < firstWd; i++) {
+        cells.push('<div class="calendar-cell is-empty"></div>');
+      }
+      for (let day = 1; day <= last; day++) {
+        const date = `${y}-${pad2(m)}-${pad2(day)}`;
+        const cls = dateSet.has(date) ? "calendar-cell has-shift" : "calendar-cell";
+        const timeText = memoMap.get(date);
+        const timeHtml = timeText ? `<br><small>${timeText}</small>` : "";
+        cells.push(`<div class="${cls}">${m}/${day}${timeHtml}</div>`);
+      }
+      confirmCalendar.innerHTML = head + cells.join("");
+      confirmList.innerHTML = d.details
+        .map((x) => {
+          const [start, end] = (x.memo || "09:00-16:00").split("-");
+          return `<li>${toMonthDay(x.targetDate)} ${start}-${end}</li>`;
+        })
+        .join("");
+    }
+
+    async function init() {
+      draft = loadDraft();
+      if (!draft || !draft.yearMonth || !Array.isArray(draft.details) || draft.details.length === 0) {
+        show("error", { message: "確認データがありません。申請画面からやり直してください。" });
+        return;
+      }
+      me = await getMeOrNull();
+      employeeView.value = me ? `${me.name || me.email}` : "local-dev";
+      if (me) logoutBtn.style.display = "inline-block";
+      yearMonthView.value = draft.yearMonth;
+      renderConfirm(draft);
+      show("confirm-ready", { count: draft.details.length, yearMonth: draft.yearMonth });
+    }
+
+    document.getElementById("backEditBtn").addEventListener("click", () => {
+      location.href = "/employee.html";
+    });
+
+    document.getElementById("confirmSubmitBtn").addEventListener("click", async () => {
+      if (!draft) {
+        show("submit-error", { message: "提出データが見つかりません" });
+        return;
+      }
+      const payload = {
+        yearMonth: draft.yearMonth,
+        note: draft.note || "",
+        details: draft.details,
+        employeeId: me && Number.isInteger(me.employeeId) ? me.employeeId : undefined
+      };
+      try {
+        const res = await req("/api/v1/shift-submissions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        clearDraft();
+        show("submit-success", res);
+      } catch (e) {
+        show("submit-error", e);
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await req("/api/v1/auth/logout", { method: "POST" });
+      } catch (_) {}
+      clearDraft();
+      location.href = "/login.html";
+    });
+
+    init().catch((e) => show("init-error", e));
+  </script>
+</body>
+</html>
+
+

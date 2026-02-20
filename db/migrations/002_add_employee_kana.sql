@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE employees
+  ADD COLUMN IF NOT EXISTS display_name_kana VARCHAR(100);
+
+COMMIT;

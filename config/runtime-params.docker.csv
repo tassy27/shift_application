@@ -1,0 +1,14 @@
+key,value
+DATABASE_URL,postgres://postgres:postgres@postgres:5432/shift_aggregation
+PORT,3001
+APP_BASE_URL,http://localhost:3001
+USE_AUTH,false
+STRICT_CONFIG,false
+SESSION_SECRET,docker-local-session-secret
+GOOGLE_CLIENT_ID,
+GOOGLE_CLIENT_SECRET,
+GOOGLE_CALLBACK_URL,http://localhost:3001/api/v1/auth/google/callback
+PRESIDENT_EMAIL,
+GOOGLE_SHEETS_SPREADSHEET_ID,president-sheet
+GOOGLE_SERVICE_ACCOUNT_FILE,
+GOOGLE_SERVICE_ACCOUNT_JSON,

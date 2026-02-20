@@ -1,0 +1,260 @@
+:root {
+  --bg: #f4f6fb;
+  --surface: #ffffff;
+  --surface-muted: #f8faff;
+  --line: #d9e2ef;
+  --line-strong: #c5d3e6;
+  --text: #1b2736;
+  --text-subtle: #5c6c82;
+  --primary: #1559a6;
+  --primary-soft: #e8f1ff;
+  --ok-soft: #dff3df;
+  --ok-line: #8ac18a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", "Yu Gothic UI", Meiryo, sans-serif;
+  background: linear-gradient(180deg, #f7f9fd 0%, var(--bg) 100%);
+  color: var(--text);
+}
+
+.wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 24px 16px 36px;
+}
+
+.page-header {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+h2 {
+  margin: 0 0 12px;
+  font-size: 19px;
+  color: #113a63;
+}
+
+.subtext {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--text-subtle);
+}
+
+.pill {
+  display: inline-block;
+  margin-left: 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 11px;
+  color: var(--text-subtle);
+  vertical-align: middle;
+}
+
+.top-nav {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.top-nav button {
+  width: auto;
+  min-width: 120px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.auth-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.auth-switch button {
+  background: #fff;
+}
+
+.auth-switch button.is-active {
+  background: var(--primary-soft);
+  border-color: #bcd6f6;
+}
+
+.auth-panel[hidden] {
+  display: none;
+}
+
+.confirm-card {
+  border-color: #bcd6f3;
+  background: var(--surface-muted);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.row-3 {
+  grid-template-columns: 1fr 1fr auto;
+}
+
+label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--text-subtle);
+}
+
+input,
+select,
+textarea,
+button {
+  width: 100%;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  padding: 9px 10px;
+  font-size: 14px;
+  color: var(--text);
+  background: #fff;
+}
+
+textarea {
+  resize: vertical;
+}
+
+button {
+  background: var(--primary-soft);
+  border-color: #bcd6f6;
+  color: var(--primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #dbeaff;
+}
+
+.btn-row-3 {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.btn-row-2 {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.table-wrap {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+th,
+td {
+  border: 1px solid var(--line);
+  padding: 6px;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  background: #f5f9ff;
+  z-index: 1;
+}
+
+pre {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f8fbff;
+  padding: 10px;
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+.calendar-grid {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.calendar-cell {
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 6px;
+  font-size: 12px;
+}
+
+.calendar-cell.is-head {
+  min-height: auto;
+  background: #eef5ff;
+  text-align: center;
+  font-weight: 700;
+}
+
+.calendar-cell.is-empty {
+  border-style: dashed;
+  background: transparent;
+}
+
+.calendar-cell.has-shift {
+  background: var(--ok-soft);
+  border-color: var(--ok-line);
+}
+
+.confirm-list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+
+@media (max-width: 820px) {
+  .row,
+  .row-3,
+  .btn-row-3,
+  .btn-row-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .top-nav button {
+    width: 100%;
+  }
+}

@@ -1,0 +1,275 @@
+﻿<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>シフト集約システム 画面ワイヤーフレーム</title>
+  <style>
+    :root {
+      --bg: #f2f6fb;
+      --line: #c8d4e4;
+      --panel: #ffffff;
+      --ink: #1f2b3a;
+      --muted: #5f7288;
+      --accent: #0f6cbd;
+      --ok: #1f8b5e;
+      --warn: #b26f00;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Yu Gothic UI", "Meiryo", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1, h2, h3 { margin: 0 0 10px; }
+    h1 { font-size: 30px; }
+    h2 { font-size: 22px; color: #113c64; margin-top: 20px; }
+    h3 { font-size: 16px; color: #17476f; }
+    p { margin: 0 0 8px; }
+    .muted { color: var(--muted); }
+    .layout {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 12px;
+    }
+    .screen {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(30, 60, 90, 0.06);
+    }
+    .bar {
+      background: linear-gradient(90deg, #f7fbff 0%, #eef6ff 100%);
+      border-bottom: 1px solid #d4e0ee;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .tag {
+      display: inline-block;
+      border: 1px solid #b9cde6;
+      border-radius: 999px;
+      font-size: 11px;
+      padding: 2px 8px;
+      color: #205586;
+      background: #fff;
+      margin-left: 6px;
+    }
+    .body { padding: 12px; }
+    .field {
+      margin-bottom: 8px;
+      border: 1px solid #d3dfed;
+      border-radius: 8px;
+      padding: 7px 8px;
+      font-size: 12px;
+      color: #37526d;
+      background: #fcfeff;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      border: 1px solid #99b8d8;
+      color: #123f68;
+      background: #f1f7ff;
+      font-weight: 600;
+    }
+    .btn.ok { border-color: #8dcab2; color: #165d41; background: #ecfbf3; }
+    .btn.warn { border-color: #e4c58f; color: #895600; background: #fff7e8; }
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .table th, .table td {
+      border: 1px solid #d6e1ef;
+      padding: 6px;
+    }
+    .table th { background: #f2f8ff; text-align: left; }
+    .pill {
+      border-radius: 999px;
+      font-size: 11px;
+      padding: 1px 7px;
+      border: 1px solid #c7d7eb;
+      background: #fff;
+    }
+    .status-ok { color: var(--ok); border-color: #94cfb8; background: #f1fcf6; }
+    .status-warn { color: var(--warn); border-color: #e6cb98; background: #fff8ea; }
+    .notes {
+      margin-top: 18px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    @media (max-width: 960px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>画面ワイヤーフレーム</h1>
+    <p class="muted">対象: 社員フロー（S01〜S05）と管理者フロー（A01〜A05）。実装前のUI骨組み確認用。</p>
+
+    <h2>社員向け</h2>
+    <div class="layout">
+      <section class="screen">
+        <div class="bar">
+          <strong>S01 ログイン</strong>
+          <span><span class="tag">Public</span></span>
+        </div>
+        <div class="body">
+          <div class="field">ロゴ / システム名</div>
+          <div class="field">説明: 社員名を選択しメールアドレスを入力してください</div>
+          <button class="btn">社員ログイン</button>
+        </div>
+      </section>
+
+      <section class="screen">
+        <div class="bar">
+          <strong>S03 シフト入力</strong>
+          <span><span class="tag">Employee</span></span>
+        </div>
+        <div class="body">
+          <div class="row">
+            <div class="field">対象月: [2026-03 ▼]</div>
+            <div class="field">社員名: [山田 太郎 ▼] / メール: [name@example.com]</div>
+          </div>
+          <table class="table">
+            <thead><tr><th>日付</th><th>希望</th><th>備考</th></tr></thead>
+            <tbody>
+              <tr><td>2026-03-01</td><td>可 / 不可 / 調整可</td><td>テキスト</td></tr>
+              <tr><td>2026-03-02</td><td>可 / 不可 / 調整可</td><td>テキスト</td></tr>
+              <tr><td>...</td><td>...</td><td>...</td></tr>
+            </tbody>
+          </table>
+          <div style="margin-top:8px;">
+            <button class="btn ok">提出する</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen">
+        <div class="bar">
+          <strong>S04 提出完了</strong>
+          <span><span class="tag">Employee</span></span>
+        </div>
+        <div class="body">
+          <div class="field">提出が完了しました。</div>
+          <div class="field">出力状態: <span class="pill status-ok">CSV差分出力予約済み</span></div>
+          <button class="btn">提出内容を確認</button>
+        </div>
+      </section>
+
+      <section class="screen">
+        <div class="bar">
+          <strong>S05 提出済み確認</strong>
+          <span><span class="tag">Employee</span></span>
+        </div>
+        <div class="body">
+          <div class="field">対象月: 2026-03</div>
+          <div class="field">提出日時: 2026-02-20 09:30</div>
+          <div class="field">状態: <span class="pill status-warn">この月は再提出できません</span></div>
+        </div>
+      </section>
+    </div>
+
+    <h2>管理者向け</h2>
+    <div class="layout">
+      <section class="screen">
+        <div class="bar">
+          <strong>A01 ダッシュボード</strong>
+          <span><span class="tag">Admin</span></span>
+        </div>
+        <div class="body">
+          <div class="row">
+            <div class="field">対象月: [2026-03 ▼]</div>
+            <div class="field">提出率: 24 / 30</div>
+          </div>
+          <button class="btn">月次集約一覧へ</button>
+          <button class="btn">未提出者一覧へ</button>
+          <button class="btn">社員マスタ管理へ</button>
+          <button class="btn">同期履歴へ</button>
+        </div>
+      </section>
+
+      <section class="screen">
+        <div class="bar">
+          <strong>A02 月次集約一覧</strong>
+          <span><span class="tag">Admin</span></span>
+        </div>
+        <div class="body">
+          <table class="table">
+            <thead><tr><th>社員</th><th>提出日</th><th>状態</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td>山田 太郎</td><td>02/15</td><td><span class="pill status-ok">提出済</span></td><td>詳細 / 修正</td></tr>
+              <tr><td>佐藤 花子</td><td>-</td><td><span class="pill status-warn">未提出</span></td><td>催促</td></tr>
+            </tbody>
+          </table>
+          <div style="margin-top:8px;"><button class="btn ok">手動CSV出力を実行</button></div>
+        </div>
+      </section>
+
+      <section class="screen">
+        <div class="bar">
+          <strong>A04 社員マスタ管理</strong>
+          <span><span class="tag">Admin</span></span>
+        </div>
+        <div class="body">
+          <div class="row">
+            <div class="field">社員コード</div>
+            <div class="field">表示名</div>
+          </div>
+          <div class="row">
+            <div class="field">所属</div>
+            <div class="field">在籍フラグ</div>
+          </div>
+          <button class="btn ok">登録</button>
+          <button class="btn">更新</button>
+          <button class="btn warn">無効化</button>
+        </div>
+      </section>
+
+      <section class="screen">
+        <div class="bar">
+          <strong>A05 CSV出力履歴</strong>
+          <span><span class="tag">Admin</span></span>
+        </div>
+        <div class="body">
+          <table class="table">
+            <thead><tr><th>JobID</th><th>種別</th><th>状態</th><th>終了時刻</th><th>成果物</th></tr></thead>
+            <tbody>
+              <tr><td>301</td><td>auto</td><td><span class="pill status-ok">success</span></td><td>09:31</td><td>-</td></tr>
+              <tr><td>302</td><td>manual</td><td><span class="pill status-warn">failed</span></td><td>09:35</td><td>CSV未作成</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <section class="notes">
+      <h3>ワイヤーフレーム注記</h3>
+      <p>1. 本資料はレイアウト骨組みの確認用で、UIスタイルは実装フェーズで調整可能。</p>
+      <p>2. 「1社員×1月1回提出」は UI だけでなく DB 制約でも担保する。</p>
+      <p>3. 監査対象操作（提出/修正/CSV出力/マスタ更新）は全て `audit_logs` 記録を前提とする。</p>
+    </section>
+  </div>
+</body>
+</html>
+

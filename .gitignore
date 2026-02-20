@@ -1,0 +1,8 @@
+﻿node_modules/
+dist/
+.npm-cache/
+.edge-tmp/
+.docker-tmp/
+storage/
+.env
+*.log

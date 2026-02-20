@@ -1,0 +1,264 @@
+﻿<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>シフト申請 | Shift Aggregation</title>
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="page-header">
+      <h1>シフト申請画面 <span class="pill">Employee</span></h1>
+      <p class="subtext">対象年月を選び、勤務可能日と時間を入力して提出します。</p>
+      <div class="top-nav">
+        <button type="button" onclick="location.href='/login.html'">ログイン画面</button>
+        <button id="goAdminBtn" type="button" onclick="location.href='/admin.html'" style="display:none;">管理者画面</button>
+        <button id="logoutBtn" type="button" style="display:none;">ログアウト</button>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>申請入力</h2>
+      <div class="row">
+        <div><label>対象年</label><select id="year"></select></div>
+        <div><label>対象月</label><select id="month"></select></div>
+      </div>
+      <div>
+        <div><label>申請者</label><input id="employeeView" readonly /></div>
+      </div>
+      <div>
+        <label>日付ごとの希望時間（チェックで 09:00〜16:00 を自動入力）</label>
+        <div class="table-wrap" style="max-height: 360px;">
+          <table>
+            <thead>
+              <tr>
+                <th>選択</th>
+                <th>日付</th>
+                <th>開始</th>
+                <th>終了</th>
+              </tr>
+            </thead>
+            <tbody id="daysTbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <label>備考</label>
+      <textarea id="note" rows="2" placeholder="何かあればここにご記入ください"></textarea>
+      <div class="btn-row-3">        <button id="clearBtn" type="button">全解除</button>
+        <button id="submitBtn">確認画面へ進む</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>レスポンス</h2>
+      <pre id="out">読み込み中...</pre>
+    </section>
+  </div>
+
+  <script src="/js/app-common.js"></script>
+  <script>
+    const out = document.getElementById("out");
+    const year = document.getElementById("year");
+    const month = document.getElementById("month");
+    const employeeView = document.getElementById("employeeView");
+    const daysTbody = document.getElementById("daysTbody");
+    const goAdminBtn = document.getElementById("goAdminBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const DRAFT_KEY = "shiftSubmissionDraft";
+    let me = null;
+
+    function show(label, data) {
+      out.textContent = `[${label}]\\n` + JSON.stringify(data, null, 2);
+    }
+
+    function selectedYearMonth() {
+      return `${year.value}-${pad2(month.value)}`;
+    }
+
+    function daysInMonth(y, m) {
+      return new Date(y, m, 0).getDate();
+    }
+
+    function collectSelectedDetails() {
+      const selected = [...daysTbody.querySelectorAll('input[data-role="enabled"]:checked')];
+      const details = selected.map((chk) => {
+        const date = chk.dataset.date;
+        const start = daysTbody.querySelector(`select[data-role="start"][data-date="${date}"]`).value;
+        const end = daysTbody.querySelector(`select[data-role="end"][data-date="${date}"]`).value;
+        return { targetDate: date, availability: "available", memo: `${start}-${end}` };
+      });
+      return { selected, details };
+    }
+
+    function saveDraft(draft) {
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    }
+
+    function loadDraft() {
+      try {
+        const raw = sessionStorage.getItem(DRAFT_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    }
+
+    function clearDraft() {
+      sessionStorage.removeItem(DRAFT_KEY);
+    }
+
+    function applyDraft(draft) {
+      if (!draft || !Array.isArray(draft.details)) return;
+      const y = Number(draft.year);
+      const m = Number(draft.month);
+      if (Number.isFinite(y)) year.value = String(y);
+      if (Number.isFinite(m)) month.value = String(m);
+      renderDays();
+      document.getElementById("note").value = draft.note || "";
+      for (const d of draft.details) {
+        const chk = daysTbody.querySelector(`input[data-role="enabled"][data-date="${d.targetDate}"]`);
+        const start = daysTbody.querySelector(`select[data-role="start"][data-date="${d.targetDate}"]`);
+        const end = daysTbody.querySelector(`select[data-role="end"][data-date="${d.targetDate}"]`);
+        if (!chk || !start || !end) continue;
+        chk.checked = true;
+        start.disabled = false;
+        end.disabled = false;
+        if (d.memo && d.memo.includes("-")) {
+          const [s, e] = d.memo.split("-");
+          start.value = s;
+          end.value = e;
+        }
+      }
+    }
+
+    function renderDays() {
+      const y = Number(year.value);
+      const m = Number(month.value);
+      const last = daysInMonth(y, m);
+      const rows = [];
+      for (let d = 1; d <= last; d++) {
+        const date = `${y}-${pad2(m)}-${pad2(d)}`;
+        const wd = new Date(y, m - 1, d).getDay();
+        const wdLabel = ["日", "月", "火", "水", "木", "金", "土"][wd];
+        const wdColor = wd === 0 ? "#b32d2d" : wd === 6 ? "#224f9b" : "#1d2a39";
+        rows.push(`
+          <tr>
+            <td style="text-align:center;">
+              <input type="checkbox" data-role="enabled" data-date="${date}" data-weekday="${wd}">
+            </td>
+            <td>${toMonthDay(date)} <span style="color:${wdColor};">(${wdLabel})</span></td>
+            <td>
+              <select data-role="start" data-date="${date}" disabled>${buildTimeOptions("09:00")}</select>
+            </td>
+            <td>
+              <select data-role="end" data-date="${date}" disabled>${buildTimeOptions("16:00")}</select>
+            </td>
+          </tr>
+        `);
+      }
+      daysTbody.innerHTML = rows.join("");
+    }
+
+    function renderMonthsByYear() {
+      const months = Array.from({ length: 12 }, (_, i) => i + 1);
+      month.innerHTML = months.map((m) => `<option value="${m}">${m}月</option>`).join("");
+      renderDays();
+      clearDraft();
+    }
+
+    async function init() {
+      const cfg = await getConfigStatusOrNull();
+      me = await getMeOrNull();
+      if (cfg && cfg.useAuth && !me) {
+        location.href = "/login.html";
+        return;
+      }
+      if (me && me.role === "admin") goAdminBtn.style.display = "inline-block";
+      if (me) logoutBtn.style.display = "inline-block";
+      employeeView.value = me ? `${me.name || me.email}` : "local-dev";
+      const now = new Date();
+      const years = [now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1, now.getFullYear() + 2];
+      year.innerHTML = years.map((y) => `<option value="${y}">${y}年</option>`).join("");
+      year.value = String(now.getMonth() === 11 ? now.getFullYear() + 1 : now.getFullYear());
+      renderMonthsByYear();
+      month.value = String(now.getMonth() === 11 ? 1 : now.getMonth() + 1);
+      renderDays();
+      applyDraft(loadDraft());
+      show("init", { role: me?.role ?? "local-dev-admin" });
+    }
+
+    year.addEventListener("change", renderMonthsByYear);
+    month.addEventListener("change", () => {
+      renderDays();
+      clearDraft();
+    });
+    daysTbody.addEventListener("change", (e) => {
+      const t = e.target;
+      if (!t || t.dataset.role !== "enabled") return;
+      const date = t.dataset.date;
+      const start = daysTbody.querySelector(`select[data-role="start"][data-date="${date}"]`);
+      const end = daysTbody.querySelector(`select[data-role="end"][data-date="${date}"]`);
+      if (t.checked) {
+        start.disabled = false;
+        end.disabled = false;
+        start.value = "09:00";
+        end.value = "16:00";
+      } else {
+        start.disabled = true;
+        end.disabled = true;
+      }
+    });
+
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      const checks = [...daysTbody.querySelectorAll('input[data-role="enabled"]')];
+      for (const chk of checks) {
+        const date = chk.dataset.date;
+        const start = daysTbody.querySelector(`select[data-role="start"][data-date="${date}"]`);
+        const end = daysTbody.querySelector(`select[data-role="end"][data-date="${date}"]`);
+        chk.checked = false;
+        start.disabled = true;
+        end.disabled = true;
+      }
+      clearDraft();
+    });
+
+    document.getElementById("submitBtn").addEventListener("click", async () => {
+      const { selected, details } = collectSelectedDetails();
+      if (selected.length === 0) {
+        show("submit-error", { message: "少なくとも1日チェックしてください" });
+        return;
+      }
+      const invalid = details.filter((d) => {
+        const [s, e] = d.memo.split("-");
+        return s >= e;
+      });
+      if (invalid.length > 0) {
+        show("submit-error", { message: "終了時間は開始時間より後にしてください", invalidDates: invalid.map((v) => v.targetDate) });
+        return;
+      }
+      saveDraft({
+        year: Number(year.value),
+        month: Number(month.value),
+        yearMonth: selectedYearMonth(),
+        note: document.getElementById("note").value,
+        details
+      });
+      location.href = "/employee-confirm.html";
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await req("/api/v1/auth/logout", { method: "POST" });
+      } catch (_) {}
+      clearDraft();
+      location.href = "/login.html";
+    });
+
+    init().catch((e) => show("init-error", e));
+  </script>
+</body>
+</html>
+
+

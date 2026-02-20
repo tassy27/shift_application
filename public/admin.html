@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>管理者画面 | Shift Aggregation</title>
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="page-header">
+      <h1>管理者画面 <span class="pill">Admin</span></h1>
+      <p class="subtext">月次申請の確認・編集、同期実行履歴を管理します。</p>
+      <div class="top-nav">
+        <button type="button" onclick="location.href='/login.html'">ログイン画面</button>
+        <button type="button" onclick="location.href='/employee.html'">シフト申請画面</button>
+        <button id="logoutBtn" type="button" style="display:none;">ログアウト</button>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>月次一覧 / 編集</h2>
+      <div class="row row-3">
+        <div>
+          <label>対象年</label>
+          <select id="adminYear"></select>
+        </div>
+        <div>
+          <label>対象月</label>
+          <select id="adminMonth"></select>
+        </div>
+        <div><label>&nbsp;</label><button id="loadAdminBtn">一覧を取得</button></div>
+      </div>
+      <div class="row">
+        <div><label>編集対象（提出ID）</label><select id="adminSubmissionSelect"></select></div>
+        <div class="btn-row-2" style="margin-top: 18px;">
+          <button id="loadEditTargetBtn" type="button">編集データ読込</button>
+          <button id="saveEditBtn" type="button">編集内容を保存</button>
+        </div>
+      </div>
+      <div>
+        <label>管理者編集（日付ごと時間を更新）</label>
+        <div class="table-wrap" style="max-height:260px;">
+          <table>
+            <thead>
+              <tr>
+                <th>日付</th>
+                <th>開始</th>
+                <th>終了</th>
+              </tr>
+            </thead>
+            <tbody id="adminEditTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>同期履歴</h2>
+      <button id="loadSyncJobsBtn" type="button">同期履歴を取得</button>
+    </section>
+
+    <section class="card">
+      <h2>レスポンス</h2>
+      <pre id="out">読み込み中...</pre>
+    </section>
+  </div>
+
+  <script src="/js/app-common.js"></script>
+  <script>
+    const out = document.getElementById("out");
+    const adminYear = document.getElementById("adminYear");
+    const adminMonth = document.getElementById("adminMonth");
+    const adminSubmissionSelect = document.getElementById("adminSubmissionSelect");
+    const adminEditTbody = document.getElementById("adminEditTbody");
+    const logoutBtn = document.getElementById("logoutBtn");
+    let adminSubmissions = [];
+
+    function show(label, data) {
+      out.textContent = `[${label}]\\n` + JSON.stringify(data, null, 2);
+    }
+
+    function getSelectedYearMonth() {
+      return `${adminYear.value}-${pad2(adminMonth.value)}`;
+    }
+
+    function parseMemoTime(memo) {
+      if (!memo || typeof memo !== "string" || !memo.includes("-")) return ["09:00", "17:00"];
+      const [s, e] = memo.split("-");
+      return [s || "09:00", e || "17:00"];
+    }
+
+    function renderAdminSubmissionOptions() {
+      if (adminSubmissions.length === 0) {
+        adminSubmissionSelect.innerHTML = `<option value="">(対象なし)</option>`;
+        return;
+      }
+      adminSubmissionSelect.innerHTML = adminSubmissions
+        .map((s) => `<option value="${s.id}">ID:${s.id} / 社員:${s.employeeId} / ${s.yearMonth}</option>`)
+        .join("");
+    }
+
+    function renderAdminEditTable(submission) {
+      if (!submission) {
+        adminEditTbody.innerHTML = "";
+        return;
+      }
+      adminEditTbody.innerHTML = submission.details
+        .map((d) => {
+          const [start, end] = parseMemoTime(d.memo);
+          return `
+            <tr>
+              <td data-date="${d.targetDate}">${toMonthDay(d.targetDate)}</td>
+              <td><select data-role="admin-start" data-date="${d.targetDate}">${buildTimeOptions(start)}</select></td>
+              <td><select data-role="admin-end" data-date="${d.targetDate}">${buildTimeOptions(end)}</select></td>
+            </tr>
+          `;
+        })
+        .join("");
+    }
+
+    async function init() {
+      const cfg = await getConfigStatusOrNull();
+      const me = await getMeOrNull();
+      if (cfg && cfg.useAuth && !me) {
+        location.href = "/login.html";
+        return;
+      }
+      if (me && me.role !== "admin") {
+        alert("管理者権限が必要です。");
+        location.href = "/login.html";
+        return;
+      }
+      if (me) logoutBtn.style.display = "inline-block";
+      const now = new Date();
+      const years = [now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1, now.getFullYear() + 2];
+      adminYear.innerHTML = years.map((y) => `<option value="${y}">${y}年</option>`).join("");
+      adminYear.value = String(now.getMonth() === 11 ? now.getFullYear() + 1 : now.getFullYear());
+      adminMonth.innerHTML = Array.from({ length: 12 }, (_, i) => i + 1)
+        .map((m) => `<option value="${m}">${m}月</option>`)
+        .join("");
+      adminMonth.value = String(now.getMonth() === 11 ? 1 : now.getMonth() + 1);
+      show("init", { role: me?.role ?? "local-dev-admin" });
+    }
+
+    document.getElementById("loadAdminBtn").addEventListener("click", async () => {
+      const m = getSelectedYearMonth();
+      try {
+        const res = await req(`/api/v1/admin/shift-submissions/${m}`);
+        adminSubmissions = res.data || [];
+        renderAdminSubmissionOptions();
+        renderAdminEditTable(adminSubmissions[0]);
+        show("admin-list", res);
+      } catch (e) {
+        show("admin-error", e);
+      }
+    });
+
+    document.getElementById("loadEditTargetBtn").addEventListener("click", () => {
+      const id = Number(adminSubmissionSelect.value);
+      const target = adminSubmissions.find((s) => s.id === id);
+      if (!target) {
+        show("admin-edit-error", { message: "編集対象が見つかりません" });
+        return;
+      }
+      renderAdminEditTable(target);
+      show("admin-edit-loaded", { id: target.id, details: target.details.length });
+    });
+
+    document.getElementById("saveEditBtn").addEventListener("click", async () => {
+      const id = Number(adminSubmissionSelect.value);
+      const target = adminSubmissions.find((s) => s.id === id);
+      if (!target) {
+        show("admin-edit-error", { message: "編集対象が見つかりません" });
+        return;
+      }
+      const details = target.details.map((d) => {
+        const start = adminEditTbody.querySelector(`select[data-role="admin-start"][data-date="${d.targetDate}"]`)?.value || "09:00";
+        const end = adminEditTbody.querySelector(`select[data-role="admin-end"][data-date="${d.targetDate}"]`)?.value || "17:00";
+        return { targetDate: d.targetDate, availability: d.availability, memo: `${start}-${end}` };
+      });
+      const invalid = details.filter((d) => {
+        const [s, e] = d.memo.split("-");
+        return s >= e;
+      });
+      if (invalid.length > 0) {
+        show("admin-edit-error", { message: "終了時間は開始時間より後にしてください", invalidDates: invalid.map((v) => v.targetDate) });
+        return;
+      }
+      try {
+        const res = await req(`/api/v1/admin/shift-submissions/by-id/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ details })
+        });
+        const idx = adminSubmissions.findIndex((s) => s.id === id);
+        if (idx >= 0) adminSubmissions[idx] = res.data;
+        renderAdminEditTable(res.data);
+        show("admin-edit-saved", res);
+      } catch (e) {
+        show("admin-edit-error", e);
+      }
+    });
+
+    document.getElementById("loadSyncJobsBtn").addEventListener("click", async () => {
+      try {
+        const jobs = await req("/api/v1/admin/sync-jobs");
+        const last = jobs.data?.[0];
+        if (!last) return show("sync-jobs", jobs);
+        const detail = await req(`/api/v1/admin/sync-jobs/${last.id}`);
+        show("sync-last-job-detail", detail);
+      } catch (e) {
+        show("sync-jobs-error", e);
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await req("/api/v1/auth/logout", { method: "POST" });
+      } catch (_) {}
+      location.href = "/login.html";
+    });
+
+    init().catch((e) => show("init-error", e));
+  </script>
+</body>
+</html>

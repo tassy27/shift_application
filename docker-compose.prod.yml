@@ -1,0 +1,23 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: shift-aggregation:latest
+    container_name: shift-aggregation-app
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - RUNTIME_PARAMS_CSV_PATH=/app/config/runtime-params.csv
+    volumes:
+      - ./config/runtime-params.csv:/app/config/runtime-params.csv:ro
+      - ./storage:/app/storage
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s

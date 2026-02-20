@@ -1,0 +1,839 @@
+openapi: 3.1.0
+info:
+  title: Shift Aggregation API
+  version: 1.0.0
+  description: |
+    月次シフト希望集約システムのAPI仕様。
+    Google OAuthログイン後のセッション/JWTを前提とする。
+servers:
+  - url: /api/v1
+tags:
+  - name: Auth
+  - name: Employee
+  - name: Admin
+  - name: Sync
+  - name: Audit
+
+paths:
+  /auth/google:
+    get:
+      tags: [Auth]
+      summary: Google OAuth開始
+      security: []
+      responses:
+        '302':
+          description: Google認証画面へリダイレクト
+
+  /auth/google/callback:
+    get:
+      tags: [Auth]
+      summary: OAuthコールバック
+      security: []
+      parameters:
+        - in: query
+          name: code
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: 認証成功後に画面へリダイレクト
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: ログアウト
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          $ref: '#/components/responses/Ok'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /me:
+    get:
+      tags: [Auth]
+      summary: ログインユーザー情報取得
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: ユーザー情報
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /shift-months/open:
+    get:
+      tags: [Employee]
+      summary: 提出可能な対象月一覧
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: 対象月一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenShiftMonthsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /employees/active:
+    get:
+      tags: [Employee]
+      summary: 社員プルダウン用一覧
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: 在籍社員一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActiveEmployeesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /shift-submissions:
+    post:
+      tags: [Employee]
+      summary: シフト希望提出（新規1回）
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShiftSubmissionCreateRequest'
+      responses:
+        '201':
+          description: 提出作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShiftSubmissionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /shift-submissions/my/{yearMonth}:
+    get:
+      tags: [Employee]
+      summary: 自分の当月提出状況取得
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/YearMonthPath'
+      responses:
+        '200':
+          description: 提出状況
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShiftSubmissionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /admin/shift-submissions/{yearMonth}:
+    get:
+      tags: [Admin]
+      summary: 月次提出一覧取得
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/YearMonthPath'
+      responses:
+        '200':
+          description: 提出一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminShiftSubmissionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/unsubmitted/{yearMonth}:
+    get:
+      tags: [Admin]
+      summary: 未提出者一覧取得
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/YearMonthPath'
+      responses:
+        '200':
+          description: 未提出者一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnsubmittedEmployeesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/shift-submissions/by-id/{id}:
+    patch:
+      tags: [Admin]
+      summary: 提出内容の管理者修正
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminShiftSubmissionUpdateRequest'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShiftSubmissionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /admin/employees:
+    get:
+      tags: [Admin]
+      summary: 社員一覧取得（在籍/退職含む）
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: 社員一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminEmployeesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Admin]
+      summary: 社員新規登録
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeCreateRequest'
+      responses:
+        '201':
+          description: 作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /admin/employees/{id}:
+    patch:
+      tags: [Admin]
+      summary: 社員更新/無効化
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeUpdateRequest'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /admin/sync-jobs:
+    get:
+      tags: [Sync]
+      summary: 同期ジョブ履歴取得
+      security:
+        - sessionAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [queued, running, success, failed]
+      responses:
+        '200':
+          description: 同期ジョブ一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncJobsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Sync]
+      summary: 手動同期実行
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSyncJobRequest'
+      responses:
+        '202':
+          description: ジョブ受付
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncJobResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/sync-jobs/{id}:
+    get:
+      tags: [Sync]
+      summary: 同期ジョブ詳細取得
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: 同期ジョブ詳細
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncJobDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /admin/sync-jobs/{id}/retry:
+    post:
+      tags: [Sync]
+      summary: 失敗ジョブ再実行
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '202':
+          description: 再実行受付
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncJobResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /admin/audit-logs:
+    get:
+      tags: [Audit]
+      summary: 監査ログ検索
+      security:
+        - sessionAuth: []
+      parameters:
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: actionType
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 監査ログ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  securitySchemes:
+    sessionAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    YearMonthPath:
+      in: path
+      name: yearMonth
+      required: true
+      schema:
+        type: string
+        pattern: '^[0-9]{4}-[0-9]{2}$'
+      example: '2026-03'
+    IdPath:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+  responses:
+    Ok:
+      description: 成功
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SuccessResponse'
+    BadRequest:
+      description: リクエスト不正
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: 認証エラー
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: 権限不足
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: 未検出
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: 重複/競合
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    SuccessResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+
+    User:
+      type: object
+      required: [id, email, role]
+      properties:
+        id:
+          type: integer
+          format: int64
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [employee, admin]
+        employeeId:
+          type: [integer, 'null']
+          format: int64
+
+    Employee:
+      type: object
+      required: [id, employeeCode, displayName, isActive]
+      properties:
+        id:
+          type: integer
+          format: int64
+        employeeCode:
+          type: string
+        displayName:
+          type: string
+        department:
+          type: [string, 'null']
+        isActive:
+          type: boolean
+
+    ShiftMonth:
+      type: object
+      required: [id, yearMonth, startDate, endDate, status]
+      properties:
+        id:
+          type: integer
+          format: int64
+        yearMonth:
+          type: string
+          pattern: '^[0-9]{4}-[0-9]{2}$'
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [open, closed]
+
+    ShiftSubmissionDetail:
+      type: object
+      required: [targetDate, availability]
+      properties:
+        targetDate:
+          type: string
+          format: date
+        availability:
+          type: string
+          enum: [available, unavailable, negotiable]
+        memo:
+          type: [string, 'null']
+
+    ShiftSubmission:
+      type: object
+      required: [id, employeeId, yearMonth, submittedAt, source, details]
+      properties:
+        id:
+          type: integer
+          format: int64
+        employeeId:
+          type: integer
+          format: int64
+        yearMonth:
+          type: string
+          pattern: '^[0-9]{4}-[0-9]{2}$'
+        submittedAt:
+          type: string
+          format: date-time
+        source:
+          type: string
+          enum: [employee, admin]
+        note:
+          type: [string, 'null']
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShiftSubmissionDetail'
+
+    ShiftSubmissionCreateRequest:
+      type: object
+      required: [yearMonth, employeeId, details]
+      properties:
+        yearMonth:
+          type: string
+          pattern: '^[0-9]{4}-[0-9]{2}$'
+        employeeId:
+          type: integer
+          format: int64
+        note:
+          type: string
+        details:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ShiftSubmissionDetail'
+
+    AdminShiftSubmissionUpdateRequest:
+      type: object
+      properties:
+        note:
+          type: string
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShiftSubmissionDetail'
+
+    EmployeeCreateRequest:
+      type: object
+      required: [employeeCode, displayName]
+      properties:
+        employeeCode:
+          type: string
+        displayName:
+          type: string
+        department:
+          type: string
+        joinedOn:
+          type: string
+          format: date
+
+    EmployeeUpdateRequest:
+      type: object
+      properties:
+        displayName:
+          type: string
+        department:
+          type: string
+        isActive:
+          type: boolean
+        leftOn:
+          type: string
+          format: date
+
+    CreateSyncJobRequest:
+      type: object
+      required: [yearMonth, spreadsheetId, sheetName]
+      properties:
+        yearMonth:
+          type: string
+          pattern: '^[0-9]{4}-[0-9]{2}$'
+        spreadsheetId:
+          type: string
+        sheetName:
+          type: string
+
+    SyncJobItem:
+      type: object
+      required: [shiftSubmissionId, status]
+      properties:
+        shiftSubmissionId:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum: [success, failed]
+        errorMessage:
+          type: [string, 'null']
+
+    SyncJob:
+      type: object
+      required: [id, triggerType, status, spreadsheetId, sheetName, createdAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        triggerType:
+          type: string
+          enum: [auto, manual, retry]
+        status:
+          type: string
+          enum: [queued, running, success, failed]
+        spreadsheetId:
+          type: string
+        sheetName:
+          type: string
+        startedAt:
+          type: [string, 'null']
+          format: date-time
+        finishedAt:
+          type: [string, 'null']
+          format: date-time
+        errorMessage:
+          type: [string, 'null']
+        createdAt:
+          type: string
+          format: date-time
+
+    AuditLog:
+      type: object
+      required: [id, userId, actionType, entityType, createdAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        userId:
+          type: integer
+          format: int64
+        actionType:
+          type: string
+        entityType:
+          type: string
+        entityId:
+          type: [integer, 'null']
+          format: int64
+        beforeData:
+          type: [object, 'null']
+          additionalProperties: true
+        afterData:
+          type: [object, 'null']
+          additionalProperties: true
+        ipAddress:
+          type: [string, 'null']
+        createdAt:
+          type: string
+          format: date-time
+
+    MeResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/User'
+
+    OpenShiftMonthsResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShiftMonth'
+
+    ActiveEmployeesResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Employee'
+
+    ShiftSubmissionResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/ShiftSubmission'
+
+    AdminShiftSubmissionListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShiftSubmission'
+
+    UnsubmittedEmployeesResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Employee'
+
+    EmployeeResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/Employee'
+
+    AdminEmployeesResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Employee'
+
+    SyncJobResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/SyncJob'
+
+    SyncJobsResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SyncJob'
+
+    SyncJobDetailResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [job, items]
+          properties:
+            job:
+              $ref: '#/components/schemas/SyncJob'
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/SyncJobItem'
+
+    AuditLogsResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLog'

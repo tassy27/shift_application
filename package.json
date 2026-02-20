@@ -1,0 +1,59 @@
+{
+  "name": "shift-aggregation",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "env:sync": "node scripts/sync-csv-to-env.js",
+    "openapi:lint": "redocly lint spec/openapi.yaml",
+    "openapi:bundle": "redocly bundle spec/openapi.yaml -o spec/openapi.bundle.yaml",
+    "openapi:types": "openapi-typescript spec/openapi.yaml -o spec/generated/openapi-types.d.ts",
+    "openapi:mock": "prism mock spec/openapi.yaml --port 4010 --host 127.0.0.1",
+    "openapi:all": "npm run openapi:lint && npm run openapi:bundle && npm run openapi:types",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "db:migrate": "node scripts/apply-migrations.js",
+    "api:build": "tsc -p tsconfig.json --outDir dist",
+    "api:start": "node dist/backend/server.js",
+    "api:dev": "npm run api:build && npm run api:start",
+    "local:server": "npm run db:migrate && node dist/backend/server.js",
+    "local:up": "npm run api:build && npm run local:server",
+    "docker:local:up": "docker compose -f docker-compose.local.yml up -d --build",
+    "docker:local:down": "docker compose -f docker-compose.local.yml down",
+    "docker:local:ps": "docker compose -f docker-compose.local.yml ps",
+    "docker:local:logs": "docker compose -f docker-compose.local.yml logs -f app",
+    "docker:local:restart": "docker compose -f docker-compose.local.yml restart app"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@redocly/cli": "^2.19.1",
+    "@stoplight/prism-cli": "^5.14.2",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.3.0",
+    "@types/react": "^19.2.14",
+    "openapi-typescript": "^7.13.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.90.21",
+    "@types/express-session": "^1.18.2",
+    "@types/passport": "^1.0.17",
+    "@types/passport-google-oauth20": "^2.0.17",
+    "@types/pg": "^8.16.0",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
+    "pg": "^8.18.0",
+    "react": "^19.2.4",
+    "zod": "^4.3.6"
+  }
+}
+
