@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --bg: #f4f6fb;
   --surface: #ffffff;
   --surface-muted: #f8faff;
@@ -256,5 +256,30 @@ pre {
 
   .top-nav button {
     width: 100%;
+  }
+}
+
+.calendar-cell small {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 10px;
+  line-height: 1.25;
+  color: #244a24;
+  word-break: break-word;
+}
+
+.calendar-cell.has-shift {
+  font-weight: 600;
+}
+
+@media (max-width: 820px) {
+  .calendar-cell {
+    min-height: 64px;
+    padding: 5px;
+    font-size: 11px;
+  }
+
+  .calendar-cell small {
+    font-size: 9px;
   }
 }

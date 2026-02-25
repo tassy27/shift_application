@@ -1,4 +1,4 @@
-const fs = require("fs");
+﻿const fs = require("fs");
 const path = require("path");
 const dotenv = require("dotenv");
 const { Client } = require("pg");
@@ -41,7 +41,7 @@ async function applyOne(client, filename, sql) {
 
 async function main() {
   if (!connectionString) {
-    throw new Error("DATABASE_URL is not set. set it in config/runtime-params.csv and run env:sync");
+    throw new Error("DATABASE_URL is not set. set it in .env and rerun");
   }
   if (!fs.existsSync(migrationsDir)) {
     throw new Error(`migrations dir not found: ${migrationsDir}`);
@@ -79,3 +79,4 @@ main().catch((e) => {
   console.error("migration failed:", e.message);
   process.exit(1);
 });
+

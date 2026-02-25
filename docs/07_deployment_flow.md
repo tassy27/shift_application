@@ -1,4 +1,4 @@
-# デプロイまでの流れ
+﻿# デプロイまでの流れ
 
 ## 1. ローカル確認
 1. `npm install`
@@ -24,8 +24,8 @@
 - `STRICT_CONFIG`
 
 補足:
-- `config/runtime-params.csv` で設定管理
-- `RUNTIME_PARAMS_CSV_PATH` で読み込みファイルを切り替え可能
+- `.env` で設定管理（現行）
+- `scripts/sync-csv-to-env.js` は旧CSV設定から `.env` へ移行するための互換用ユーティリティ
 
 ## 4. Docker 本番手順
 1. `docker compose -f docker-compose.prod.yml up -d --build`
@@ -39,3 +39,4 @@
 3. `storage/csv/{yearMonth}` にCSVが出力される
 4. 再実行時、差分なしならCSVバージョンが増えない
 5. 管理者画面でジョブ履歴が確認できる
+

@@ -85,7 +85,7 @@ npm run local:up
 補足:
 
 - 現在の実装は `.env` を直接読み込みます（CSV 同期は不要）。
-- `RUNTIME_PARAMS_CSV_PATH` は `.env.example` に残っていますが、現行の起動処理では必須ではありません。
+- `scripts/sync-csv-to-env.js` / `npm run env:sync` は旧CSV設定から `.env` へ移行するための互換用ユーティリティです（通常運用では不要）。
 
 ## 6. 画面と動作確認
 
@@ -103,3 +103,10 @@ npm run local:up
 
 - `http://localhost:3001/api/v1/health` が応答しない
 : `npm run docker:local:ps` で `app` が `healthy` か確認し、必要に応じて `npm run docker:local:logs` を確認してください。
+
+
+## 8. 認証運用ルール
+
+- USE_AUTH=true 前提の運用手順と PRESIDENT_EMAIL の扱いは docs/10_auth_spec.md を参照してください。
+
+
