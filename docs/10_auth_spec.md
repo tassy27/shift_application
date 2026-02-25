@@ -3,6 +3,7 @@
 最終更新: 2026-02-25
 
 このドキュメントは、`USE_AUTH=true` を前提にした認証・認可の運用ルールを定義します。
+現行実装は Google OAuth ではなく、メールアドレス + 氏名（漢字 / カナ）によるローカル登録・ログイン方式です。
 
 ## 1. 用語
 
@@ -12,33 +13,46 @@
 
 ## 2. 現行の認証方式（実装ベース）
 
-本システムには以下のログイン経路があります。
+標準UIの認証導線は以下です。
 
-1. 社員選択 + メール入力ログイン（`POST /api/v1/auth/employee-login`）
-- `login.html` の標準UIで使用。
-- 入力された `employeeId` と `email` を使ってユーザーを作成/更新し、セッションを発行。
+1. sign in（登録）`POST /api/v1/auth/sign-in`
+- `sign-in.html` から利用。
+- `email` / `fullName` / `fullNameKana` を登録する。
+- 登録のみで、セッションは発行しない。
 
-2. ローカルID/PWログイン（`POST /api/v1/auth/login`）
-- API は存在するが、標準UIには未接続（将来/運用用途）。
+2. name login（ログイン）`POST /api/v1/auth/name-login`
+- `login.html` から利用。
+- `email` / `fullName` / `fullNameKana` の完全一致でログイン。
+- 成功時にセッションを発行。
 
-3. ローカル登録（`POST /api/v1/auth/register`）
-- API は存在するが、標準UIには未接続（将来/運用用途）。
+3. 旧ローカルAPI（互換用）
+- `POST /api/v1/auth/employee-login`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/register`
+- API は残っているが、標準UI導線では使用しない。
 
-4. Google OAuth（`/api/v1/auth/google`）
-- `USE_AUTH=true` かつ `GOOGLE_CLIENT_ID/SECRET` 設定時のみ有効。
+補足:
+- Google OAuth ルートは削除済み（現行導線では使用しません）。
 
+## 3. 画面遷移（現行UI）
 
-## 2.1 本番運用方針（ローカルログイン廃止予定）
+1. `index.html`（タイトル画面）
+- `sign in` / `login` の入口のみ表示。
 
-将来的なレンタルサーバー運用を見据え、**本番ではローカルログインを使用しない** 方針とする。
+2. `sign-in.html`（登録画面）
+- 登録成功後に完了表示。
+- `login画面へ進む` からログインへ遷移。
 
-- 本番/準本番は `USE_AUTH=true` を前提とする
-- 認証経路は Google OAuth を基本とする
-- `POST /api/v1/auth/employee-login` / `POST /api/v1/auth/login` / `POST /api/v1/auth/register` は開発用途に限定する
-- 段階的に、`USE_AUTH=true` 時はローカルログインAPIを無効化する実装へ移行する
+3. `login.html`（ログイン画面）
+- ログイン成功時の遷移:
+  - `admin` -> `admin.html`
+  - `employee` -> `employee.html`
 
+4. `employee.html` -> `employee-confirm.html`
+- 提出前はブラウザ `sessionStorage` に下書きを保持（キー: `shiftSubmissionDraft`）。
+- `この内容で提出する` 実行後に DB へ保存。
 
-## 3. USE_AUTH の動作ルール
+## 4. USE_AUTH の動作ルール
 
 ### `USE_AUTH=false`（ローカルデモモード）
 - 認証必須APIでもアクセスを通す（`requireAuth` がスキップされる）。
@@ -50,9 +64,7 @@
 - 管理者APIは `req.user.role === 'admin'` のときのみ許可。
 - `GET /api/v1/me` は未ログイン時 `401`。
 
-## 4. 管理者判定（`PRESIDENT_EMAIL`）
-
-## 判定ルール
+## 5. 管理者判定（`PRESIDENT_EMAIL`）
 
 次のいずれかで `admin` になります。
 
@@ -60,10 +72,10 @@
 2. 既存ユーザーがすでに `admin` ロールで保存されている
 
 補足:
-- `employee-login` 再実行時に、既存 `admin` を `employee` に降格しないよう修正済み。
-- ブートストラップ用の `admin.demo@example.com` は起動時に `admin` へ補正される。
+- 起動時ブートストラップで `admin.demo@example.com` は `admin` に補正される。
+- デモ管理者の氏名/カナも name-login で使えるように補完される。
 
-## 5. `PRESIDENT_EMAIL` 運用ルール（確定）
+## 6. `PRESIDENT_EMAIL` 運用ルール（確定）
 
 ### 基本方針
 - `PRESIDENT_EMAIL` は「現行の管理責任者」1名を示すメールアドレスとして運用する。
@@ -76,11 +88,7 @@
 4. 新管理者がログインして `admin` 権限になることを確認する（`/api/v1/me` または管理者画面）。
 5. 旧管理者を一般社員へ戻す必要がある場合は、DB上の `users.role` を運用手順に沿って更新する。
 
-### 注意点
-- `PRESIDENT_EMAIL` を空欄のまま `USE_AUTH=true` にすると、`STRICT_CONFIG=true` の場合は起動失敗となる。
-- `STRICT_CONFIG=false` でも、管理者判定が不明確になるため本番運用では禁止。
-
-## 6. 推奨設定（本番/準本番）
+## 7. 推奨設定（本番/準本番）
 
 ```env
 USE_AUTH=true
@@ -90,28 +98,19 @@ SESSION_SECRET=<十分に長いランダム文字列>
 DATABASE_URL=postgres://...
 ```
 
-Google OAuth を使う場合は以下も設定:
-
-```env
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-GOOGLE_CALLBACK_URL=https://<your-domain>/api/v1/auth/google/callback
-```
-
-## 7. 運用チェックリスト（認証まわり）
+## 8. 運用チェックリスト（認証まわり）
 
 - `USE_AUTH=true`
 - `STRICT_CONFIG=true`
 - `PRESIDENT_EMAIL` が空でない
 - `SESSION_SECRET` が初期値でない
 - `GET /api/v1/me` 未ログイン時に `401` になる
+- `sign-in -> login` の導線で社員ログインできる
 - 管理者ログイン後に `/admin.html` へ遷移できる
 - 一般社員ログインで管理者APIが `403` になる
 
-## 8. 現時点の制約（今後改善候補）
+## 9. 現時点の制約（今後改善候補）
 
+- 氏名/カナの完全一致に依存するため、表記ゆれ対策（正規化ルール強化）が今後の改善候補
 - 管理者の複数人運用は `PRESIDENT_EMAIL` 単体では表現しづらい（DBベース管理へ移行余地あり）
-- 標準UIは現在 `employee-login` 中心で、`/auth/login` `/auth/register` の画面導線は未整備
-
-
-
+- 旧互換API（`/auth/login`, `/auth/register`, `/auth/employee-login`）の削除時期は未定

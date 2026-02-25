@@ -89,9 +89,20 @@ npm run local:up
 
 ## 6. 画面と動作確認
 
-- ログイン画面: `http://localhost:3001/login.html`
+主な画面:
+
+- タイトル画面: `http://localhost:3001/`
+- sign in 画面: `http://localhost:3001/sign-in.html`
+- login 画面: `http://localhost:3001/login.html`
 - 申請画面: `http://localhost:3001/employee.html`
+- 確認画面: `http://localhost:3001/employee-confirm.html`
 - 管理者画面: `http://localhost:3001/admin.html`
+
+ログイン導線（現行）:
+
+1. `sign-in.html` で `メールアドレス / 氏名（漢字） / 氏名（カナ）` を登録
+2. `login.html` で同じ 3 項目を入力してログイン
+3. 社員は `employee.html`、管理者は `admin.html` へ遷移
 
 ## 7. よくあるエラー
 
@@ -107,6 +118,5 @@ npm run local:up
 
 ## 8. 認証運用ルール
 
-- USE_AUTH=true 前提の運用手順と PRESIDENT_EMAIL の扱いは docs/10_auth_spec.md を参照してください。
-
-
+- 現行の認証仕様（名前ベース login / admin 判定 / 運用ルール）は `docs/10_auth_spec.md` を参照してください。
+- Google OAuth は現行UI導線では使用していません（関連ルートは削除済み）。
