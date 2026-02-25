@@ -12,6 +12,7 @@ import {
   ensureBootstrapData,
   ensureEmployeeForUser,
   findLocalUserByEmail,
+  findLocalUserByIdentity,
   listActiveEmployees,
   loginByEmployeeSelection,
   registerLocalUser,
@@ -78,12 +79,104 @@ const authEmployeeLoginSchema = z.object({
   employeeId: z.number().int().positive(),
   email: z.string().email(),
 });
+const authNameSignInSchema = z.object({
+  email: z.string().email(),
+  fullName: z.string().min(1).max(100),
+  fullNameKana: z.string().min(1).max(100),
+});
+const authNameLoginSchema = z.object({
+  email: z.string().email(),
+  fullName: z.string().min(1).max(100),
+  fullNameKana: z.string().min(1).max(100),
+});
+
+function normalizeAuthNameInput(input: { email: string; fullName: string; fullNameKana: string }) {
+  return {
+    email: input.email.trim().toLowerCase(),
+    fullName: input.fullName.trim(),
+    fullNameKana: input.fullNameKana.trim(),
+  };
+}
 
 app.get("/api/v1/public/employees/active", async (_req, res) => {
   const employees = await listActiveEmployees();
   return ok(res, employees);
 });
 
+app.post("/api/v1/auth/sign-in", async (req, res) => {
+  const parsed = authNameSignInSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: { code: "BAD_REQUEST", message: parsed.error.issues.map((i) => i.message).join(", ") },
+    });
+  }
+  const input = normalizeAuthNameInput(parsed.data);
+  const role =
+    config.presidentEmail && input.email.toLowerCase() === config.presidentEmail.toLowerCase()
+      ? "admin"
+      : "employee";
+  try {
+    const registered = await registerLocalUser({
+      email: input.email,
+      fullName: input.fullName,
+      fullNameKana: input.fullNameKana,
+      role,
+      passwordHash: null,
+    });
+    return res.status(201).json({
+      data: {
+        id: registered.id,
+        email: registered.email,
+        role: registered.role,
+        fullName: registered.fullName,
+        fullNameKana: registered.fullNameKana,
+      },
+    });
+  } catch (e) {
+    if (e instanceof Error && e.message === "EMAIL_ALREADY_EXISTS") {
+      return res.status(409).json({ error: { code: "CONFLICT", message: "email already registered" } });
+    }
+    return res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "sign in failed" } });
+  }
+});
+
+app.post("/api/v1/auth/name-login", async (req, res) => {
+  const parsed = authNameLoginSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: { code: "BAD_REQUEST", message: parsed.error.issues.map((i) => i.message).join(", ") },
+    });
+  }
+  const input = normalizeAuthNameInput(parsed.data);
+  const user = await findLocalUserByIdentity({
+    email: input.email,
+    fullName: input.fullName,
+    fullNameKana: input.fullNameKana,
+  });
+  if (!user) {
+    return res.status(401).json({ error: { code: "UNAUTHORIZED", message: "invalid email or name" } });
+  }
+  const role =
+    config.presidentEmail && user.email.toLowerCase() === config.presidentEmail.toLowerCase()
+      ? "admin"
+      : user.role;
+  await resetSession(req);
+  const employeeId = user.employeeId ?? (await ensureEmployeeForUser(user.id));
+  const sessionUser = {
+    id: `local:${user.id}`,
+    dbUserId: user.id,
+    email: user.email,
+    name: user.fullName,
+    role,
+    employeeId,
+  };
+  return req.login(sessionUser, (err) => {
+    if (err) {
+      return res.status(500).json({ error: { code: "SESSION_ERROR", message: "failed to create session" } });
+    }
+    return res.json({ data: { ...sessionUser } });
+  });
+});
 app.post("/api/v1/auth/register", async (req, res) => {
   const parsed = authRegisterSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -206,31 +299,6 @@ app.post("/api/v1/auth/employee-login", async (req, res) => {
     }
     return res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "employee login failed" } });
   }
-});
-
-app.get("/api/v1/auth/google", (req, res, next) => {
-  if (!config.useAuth) return res.redirect("/");
-  if (!config.googleClientId || !config.googleClientSecret) {
-    return res.status(500).json({
-      error: { code: "AUTH_NOT_CONFIGURED", message: "google oauth env is not configured" },
-    });
-  }
-  return passport.authenticate("google", {
-    scope: ["profile", "email"],
-    session: true,
-  })(req, res, next);
-});
-
-app.get("/api/v1/auth/google/callback", (req, res, next) => {
-  if (!config.useAuth) return res.redirect("/");
-  return passport.authenticate("google", { failureRedirect: "/", session: true })(
-    req,
-    res,
-    () => {
-      if (req.user?.role === "admin") return res.redirect("/admin.html");
-      return res.redirect("/employee.html");
-    }
-  );
 });
 
 app.post("/api/v1/auth/logout", (req, res) => {

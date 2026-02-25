@@ -1,11 +1,47 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="refresh" content="0; url=/login.html" />
-  <title>Shift Aggregation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shift Aggregation | タイトル</title>
+  <link rel="stylesheet" href="/css/app.css" />
 </head>
 <body>
-  <p>Redirecting to <a href="/login.html">/login.html</a> ...</p>
+  <div class="wrap" style="max-width: 860px;">
+    <header class="page-hero">
+      <div>
+        <h1>Shift Aggregation <span class="pill">Service</span></h1>
+        <p class="subtext">シフト申請サービスのタイトル画面です。はじめて利用する方は sign in、登録済みの方は login から進んでください。</p>
+      </div>
+      <div class="stepper" aria-label="利用フロー">
+        <div class="step is-active">
+          <div class="step-index">1</div>
+          <div class="step-title">タイトル画面</div>
+          <div class="step-desc">sign in / login を選択</div>
+        </div>
+        <div class="step">
+          <div class="step-index">2</div>
+          <div class="step-title">本人登録 / ログイン</div>
+          <div class="step-desc">メール + 氏名 + カナ</div>
+        </div>
+        <div class="step">
+          <div class="step-index">3</div>
+          <div class="step-title">シフト申請</div>
+          <div class="step-desc">申請後に再申請 or ログアウト</div>
+        </div>
+      </div>
+    </header>
+
+    <section class="card">
+      <div class="section-title">
+        <h2>はじめる</h2>
+        <span class="badge primary">ページ遷移</span>
+      </div>
+      <div class="btn-row-2">
+        <button type="button" class="btn btn-secondary" onclick="location.href='/sign-in.html'">sign in（新規登録）</button>
+        <button type="button" class="btn btn-primary" onclick="location.href='/login.html'">login（ログイン）</button>
+      </div>
+    </section>
+  </div>
 </body>
 </html>

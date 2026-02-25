@@ -48,3 +48,40 @@ async function getConfigStatusOrNull() {
     return null;
   }
 }
+
+
+function relocateTopNavAboveDebug() {
+  const navs = Array.from(document.querySelectorAll('.top-nav'));
+  if (!navs.length) return;
+
+  navs.forEach((nav) => {
+    if (nav.dataset.relocatedNav === '1') return;
+
+    const shell = nav.closest('.container') || document.body;
+    const targetSelector = nav.dataset.navTarget;
+    if (targetSelector) {
+      const target = shell.querySelector(targetSelector) || document.querySelector(targetSelector);
+      if (target && target.parentNode) {
+        nav.dataset.relocatedNav = '1';
+        nav.classList.add('is-bottom-nav');
+        target.parentNode.insertBefore(nav, target.nextSibling);
+        return;
+      }
+    }
+
+    const debugOut = shell.querySelector('pre#out');
+    const debugCard = debugOut ? debugOut.closest('section.card, .card') : null;
+    if (!debugCard) return;
+    if (debugCard.previousElementSibling === nav) return;
+
+    nav.dataset.relocatedNav = '1';
+    nav.classList.add('is-bottom-nav');
+    debugCard.parentNode.insertBefore(nav, debugCard);
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', relocateTopNavAboveDebug);
+} else {
+  relocateTopNavAboveDebug();
+}

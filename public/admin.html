@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
@@ -8,60 +8,173 @@
 </head>
 <body>
   <div class="wrap">
-    <header class="page-header">
-      <h1>管理者画面 <span class="pill">Admin</span></h1>
-      <p class="subtext">月次申請の確認・編集、同期実行履歴を管理します。</p>
-      <div class="top-nav">
-        <button type="button" onclick="location.href='/login.html'">ログイン画面</button>
-        <button type="button" onclick="location.href='/employee.html'">シフト申請画面</button>
-        <button id="logoutBtn" type="button" style="display:none;">ログアウト</button>
+    <header class="page-hero">
+      <div class="hero-grid">
+        <div>
+          <h1>管理者ダッシュボード <span class="pill">Admin</span></h1>
+          <p class="subtext">月ごとの提出状況を確認し、提出一覧から対象を選んで詳細を編集します。提出IDと社員IDは常に分けて表示します。</p>
+          <div class="top-nav">
+<button type="button" class="btn btn-secondary" onclick="location.href='/employee.html'">社員申請画面</button>
+            <button id="logoutBtn" type="button" class="btn btn-secondary" style="display:none;">ログアウト</button>
+          </div>
+        </div>
       </div>
     </header>
 
     <section class="card">
-      <h2>月次一覧 / 編集</h2>
+      <div class="section-title">
+        <h2>1. 月次の対象を選択</h2>
+        <div class="hint">先に対象月を読み込むと一覧と未提出者をまとめて更新します</div>
+      </div>
       <div class="row row-3">
         <div>
-          <label>対象年</label>
+          <label for="adminYear">対象年</label>
           <select id="adminYear"></select>
         </div>
         <div>
-          <label>対象月</label>
+          <label for="adminMonth">対象月</label>
           <select id="adminMonth"></select>
         </div>
-        <div><label>&nbsp;</label><button id="loadAdminBtn">一覧を取得</button></div>
-      </div>
-      <div class="row">
-        <div><label>編集対象（提出ID）</label><select id="adminSubmissionSelect"></select></div>
-        <div class="btn-row-2" style="margin-top: 18px;">
-          <button id="loadEditTargetBtn" type="button">編集データ読込</button>
-          <button id="saveEditBtn" type="button">編集内容を保存</button>
+        <div>
+          <label>&nbsp;</label>
+          <button id="loadAdminBtn" type="button" class="btn btn-primary">月次一覧を取得</button>
         </div>
       </div>
-      <div>
-        <label>管理者編集（日付ごと時間を更新）</label>
-        <div class="table-wrap" style="max-height:260px;">
-          <table>
-            <thead>
-              <tr>
-                <th>日付</th>
-                <th>開始</th>
-                <th>終了</th>
-              </tr>
-            </thead>
-            <tbody id="adminEditTbody"></tbody>
-          </table>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">提出済み件数</div>
+          <div id="kpiSubmitted" class="stat-value">0</div>
+          <div class="stat-sub">提出一覧の件数</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">未提出人数</div>
+          <div id="kpiUnsubmitted" class="stat-value">0</div>
+          <div class="stat-sub">社員マスタ基準</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">対象人数</div>
+          <div id="kpiTotal" class="stat-value">0</div>
+          <div class="stat-sub">提出済み + 未提出</div>
         </div>
       </div>
     </section>
 
-    <section class="card">
-      <h2>同期履歴</h2>
-      <button id="loadSyncJobsBtn" type="button">同期履歴を取得</button>
-    </section>
+    <div class="admin-layout">
+      <div class="section-stack">
+        <section class="card">
+          <div class="section-title">
+            <h2>2. 提出一覧</h2>
+            <div class="hint">氏名を先頭に表示。提出IDと社員IDを分離して表示します</div>
+          </div>
+          <div class="row" style="margin-bottom:10px;">
+            <div>
+              <label for="submissionSearchInput">一覧検索（氏名 / 提出ID / 社員ID）</label>
+              <input id="submissionSearchInput" type="text" placeholder="例: 山田 / 123 / EmployeeID:5" />
+            </div>
+            <div>
+              <label for="submissionSortSelect">並び替え</label>
+              <select id="submissionSortSelect">
+                <option value="submittedAtDesc">提出日時（新しい順）</option>
+                <option value="submittedAtAsc">提出日時（古い順）</option>
+                <option value="nameAsc">氏名（A-Z / あ-ん）</option>
+                <option value="submissionIdAsc">提出ID（昇順）</option>
+                <option value="submissionIdDesc">提出ID（降順）</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-wrap" style="max-height: 380px;">
+            <table class="list-table">
+              <thead>
+                <tr>
+                  <th style="width: 32%;">申請者</th>
+                  <th style="width: 14%;">提出ID</th>
+                  <th style="width: 18%;">社員ID</th>
+                  <th style="width: 18%;">提出日時</th>
+                  <th style="width: 10%;">日数</th>
+                  <th style="width: 8%;"></th>
+                </tr>
+              </thead>
+              <tbody id="submissionListTbody">
+                <tr><td colspan="6"><div class="empty-state">対象月を読み込むと提出一覧を表示します</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="field-group" style="margin-top:12px; margin-bottom:0;">
+            <label for="adminSubmissionSelect">編集対象（提出ID）</label>
+            <select id="adminSubmissionSelect"></select>
+          </div>
+          <div class="btn-row-2">
+            <button id="loadEditTargetBtn" type="button" class="btn btn-secondary">選択した提出を読込</button>
+            <button id="saveEditBtn" type="button" class="btn btn-primary">編集内容を保存</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="section-title">
+            <h2>未提出者一覧</h2>
+            <div class="hint">提出催促の対象確認用</div>
+          </div>
+          <div id="unsubmittedList" class="empty-state">対象月を読み込むと未提出者を表示します</div>
+        </section>
+
+        <section class="card">
+          <div class="section-title">
+            <h2>同期履歴</h2>
+            <div class="hint">最新ジョブの結果確認</div>
+          </div>
+          <div class="btn-row-2">
+            <button id="loadSyncJobsBtn" type="button" class="btn btn-secondary">最新同期を取得</button>
+            <button id="loadSyncListBtn" type="button" class="btn btn-secondary">一覧のみ表示</button>
+          </div>
+        </section>
+      </div>
+
+      <div class="section-stack sticky-side">
+        <section class="card confirm-card">
+          <div class="section-title">
+            <h2>3. 提出詳細（編集対象）</h2>
+            <span id="detailStateBadge" class="badge warning">未選択</span>
+          </div>
+          <div class="info-list">
+            <div class="info-item"><dt>氏名</dt><dd id="detailName">-</dd></div>
+            <div class="info-item"><dt>社員ID</dt><dd id="detailEmployeeId">-</dd></div>
+            <div class="info-item"><dt>提出ID</dt><dd id="detailSubmissionId">-</dd></div>
+            <div class="info-item"><dt>対象月</dt><dd id="detailYearMonth">-</dd></div>
+            <div class="info-item"><dt>提出日時</dt><dd id="detailSubmittedAt">-</dd></div>
+            <div class="info-item"><dt>備考</dt><dd id="detailNote">（なし）</dd></div>
+          </div>
+          <div class="muted-box" style="margin-top:12px;">
+            <div class="hint">編集対象の識別</div>
+            <div id="detailTargetHint" style="font-size:13px; line-height:1.45; margin-top:4px;">提出一覧から対象を選択してください。</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="section-title">
+            <h2>日別時間の編集</h2>
+            <div class="hint">終了時間は開始時間より後</div>
+          </div>
+          <div class="table-wrap" style="max-height: 420px;">
+            <table class="table-compact">
+              <thead>
+                <tr>
+                  <th>日付</th>
+                  <th>開始</th>
+                  <th>終了</th>
+                </tr>
+              </thead>
+              <tbody id="adminEditTbody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
 
     <section class="card">
-      <h2>レスポンス</h2>
+      <div class="section-title">
+        <h2>デバッグ情報</h2>
+        <div class="hint">開発用（API返却確認）</div>
+      </div>
       <pre id="out">読み込み中...</pre>
     </section>
   </div>
@@ -74,38 +187,166 @@
     const adminSubmissionSelect = document.getElementById("adminSubmissionSelect");
     const adminEditTbody = document.getElementById("adminEditTbody");
     const logoutBtn = document.getElementById("logoutBtn");
+    const submissionSearchInput = document.getElementById("submissionSearchInput");
+    const submissionSortSelect = document.getElementById("submissionSortSelect");
     let adminSubmissions = [];
+    let unsubmittedEmployees = [];
+    let adminListQuery = "";
+    const employeeNameById = new Map();
 
     function show(label, data) {
-      out.textContent = `[${label}]\\n` + JSON.stringify(data, null, 2);
+      out.textContent = `[${label}]\n` + JSON.stringify(data, null, 2);
     }
 
     function getSelectedYearMonth() {
       return `${adminYear.value}-${pad2(adminMonth.value)}`;
     }
 
+    function employeeLabelById(employeeId) {
+      const name = employeeNameById.get(Number(employeeId));
+      return name ? `${name} (EmployeeID:${employeeId})` : `EmployeeID:${employeeId}`;
+    }
+
+    function employeeNameByEmployeeId(employeeId) {
+      return employeeNameById.get(Number(employeeId)) || "（氏名未取得）";
+    }
+
+    function formatDateTime(value) {
+      if (!value) return "-";
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return String(value);
+      const y = d.getFullYear();
+      const m = pad2(d.getMonth() + 1);
+      const day = pad2(d.getDate());
+      const hh = pad2(d.getHours());
+      const mm = pad2(d.getMinutes());
+      return `${y}-${m}-${day} ${hh}:${mm}`;
+    }
+
+    async function loadEmployeeMaster() {
+      try {
+        const res = await req("/api/v1/admin/employees");
+        employeeNameById.clear();
+        for (const e of (res.data || [])) {
+          employeeNameById.set(Number(e.id), e.displayName || `EmployeeID:${e.id}`);
+        }
+      } catch (_) {
+        // continue without names
+      }
+    }
+
     function parseMemoTime(memo) {
-      if (!memo || typeof memo !== "string" || !memo.includes("-")) return ["09:00", "17:00"];
+      if (!memo || typeof memo !== "string" || !memo.includes("-")) return ["09:00", "16:00"];
       const [s, e] = memo.split("-");
-      return [s || "09:00", e || "17:00"];
+      return [s || "09:00", e || "16:00"];
+    }
+    function submissionSearchText(s) {
+      const name = employeeNameByEmployeeId(s.employeeId);
+      return [
+        name,
+        `提出ID:${s.id}`,
+        String(s.id),
+        `社員ID:${s.employeeId}`,
+        `EmployeeID:${s.employeeId}`,
+        String(s.employeeId),
+        s.yearMonth || "",
+        s.note || ""
+      ].join(" ").toLowerCase();
+    }
+
+    function getVisibleSubmissions() {
+      const query = (adminListQuery || "").trim().toLowerCase();
+      let list = [...adminSubmissions];
+      if (query) {
+        list = list.filter((s) => submissionSearchText(s).includes(query));
+      }
+      const sortKey = submissionSortSelect?.value || "submittedAtDesc";
+      list.sort((a, b) => {
+        if (sortKey === "submissionIdAsc") return Number(a.id) - Number(b.id);
+        if (sortKey === "submissionIdDesc") return Number(b.id) - Number(a.id);
+        if (sortKey === "nameAsc") {
+          const an = employeeNameByEmployeeId(a.employeeId);
+          const bn = employeeNameByEmployeeId(b.employeeId);
+          const cmp = an.localeCompare(bn, "ja");
+          return cmp !== 0 ? cmp : Number(a.id) - Number(b.id);
+        }
+        if (sortKey === "submittedAtAsc") {
+          return new Date(a.submittedAt || 0).getTime() - new Date(b.submittedAt || 0).getTime();
+        }
+        return new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime();
+      });
+      return list;
     }
 
     function renderAdminSubmissionOptions() {
-      if (adminSubmissions.length === 0) {
+      const visible = getVisibleSubmissions();
+      if (visible.length === 0) {
         adminSubmissionSelect.innerHTML = `<option value="">(対象なし)</option>`;
         return;
       }
-      adminSubmissionSelect.innerHTML = adminSubmissions
-        .map((s) => `<option value="${s.id}">ID:${s.id} / 社員:${s.employeeId} / ${s.yearMonth}</option>`)
+      adminSubmissionSelect.innerHTML = visible
+        .map((s) => `<option value="${s.id}">提出ID:${s.id} / ${employeeLabelById(s.employeeId)} / ${s.yearMonth}</option>`)
         .join("");
+    }
+
+    function renderMonthlyKpi() {
+      const submitted = adminSubmissions.length;
+      const unsubmitted = unsubmittedEmployees.length;
+      const total = submitted + unsubmitted;
+      document.getElementById("kpiSubmitted").textContent = String(submitted);
+      document.getElementById("kpiUnsubmitted").textContent = String(unsubmitted);
+      document.getElementById("kpiTotal").textContent = String(total);
+    }
+
+    function renderUnsubmittedList() {
+      const box = document.getElementById("unsubmittedList");
+      if (!Array.isArray(unsubmittedEmployees) || unsubmittedEmployees.length === 0) {
+        box.className = "empty-state";
+        box.textContent = "未提出者はいません";
+        return;
+      }
+      box.className = "muted-box";
+      box.innerHTML = `<ul class="confirm-list">${unsubmittedEmployees.map((u) => `<li>${u.displayName || employeeNameByEmployeeId(u.id) || "（名前未設定）"}（社員ID:${u.id}）</li>`).join("")}</ul>`;
+    }
+
+    function renderSubmissionTable() {
+      const tbody = document.getElementById("submissionListTbody");
+      if (!adminSubmissions.length) {
+        tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">この月の提出はまだありません</div></td></tr>';
+        return;
+      }
+      const visible = getVisibleSubmissions();
+      if (!visible.length) {
+        tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">検索条件に一致する提出がありません</div></td></tr>';
+        return;
+      }
+      const selectedId = Number(adminSubmissionSelect.value || 0);
+      tbody.innerHTML = visible.map((s) => {
+        const isSelected = selectedId === s.id;
+        const name = employeeNameByEmployeeId(s.employeeId);
+        const noteLabel = s.note && String(s.note).trim() ? "備考あり" : "備考なし";
+        return `
+          <tr ${isSelected ? 'style="background:#eef4ff;"' : ""}>
+            <td>
+              <div class="line-main">${name}</div>
+              <div class="line-sub">${s.yearMonth} / ${noteLabel}</div>
+            </td>
+            <td>提出ID:${s.id}</td>
+            <td>社員ID:${s.employeeId}</td>
+            <td>${formatDateTime(s.submittedAt)}</td>
+            <td class="text-right">${(s.details || []).length}日</td>
+            <td><button type="button" class="btn btn-secondary" data-role="pick-submission" data-id="${s.id}">選択</button></td>
+          </tr>
+        `;
+      }).join("");
     }
 
     function renderAdminEditTable(submission) {
       if (!submission) {
-        adminEditTbody.innerHTML = "";
+        adminEditTbody.innerHTML = '<tr><td colspan="3"><div class="empty-state">提出一覧から編集対象を選択してください</div></td></tr>';
         return;
       }
-      adminEditTbody.innerHTML = submission.details
+      adminEditTbody.innerHTML = (submission.details || [])
         .map((d) => {
           const [start, end] = parseMemoTime(d.memo);
           return `
@@ -119,16 +360,96 @@
         .join("");
     }
 
+    function renderDetailPanel(submission) {
+      const badge = document.getElementById("detailStateBadge");
+      if (!submission) {
+        document.getElementById("detailName").textContent = "-";
+        document.getElementById("detailEmployeeId").textContent = "-";
+        document.getElementById("detailSubmissionId").textContent = "-";
+        document.getElementById("detailYearMonth").textContent = "-";
+        document.getElementById("detailSubmittedAt").textContent = "-";
+        document.getElementById("detailNote").textContent = "（なし）";
+        document.getElementById("detailTargetHint").textContent = "提出一覧から対象を選択してください。";
+        {
+          const heroSelectedSubmissionEl = document.getElementById("heroSelectedSubmission");
+          if (heroSelectedSubmissionEl) heroSelectedSubmissionEl.textContent = "未選択";
+        }
+        badge.textContent = "未選択";
+        badge.className = "badge warning";
+        return;
+      }
+      const name = employeeNameByEmployeeId(submission.employeeId);
+      document.getElementById("detailName").textContent = name;
+      document.getElementById("detailEmployeeId").textContent = `社員ID:${submission.employeeId}`;
+      document.getElementById("detailSubmissionId").textContent = `提出ID:${submission.id}`;
+      document.getElementById("detailYearMonth").textContent = submission.yearMonth || "-";
+      document.getElementById("detailSubmittedAt").textContent = formatDateTime(submission.submittedAt);
+      document.getElementById("detailNote").textContent = submission.note && String(submission.note).trim() ? String(submission.note) : "（なし）";
+      document.getElementById("detailTargetHint").textContent = `${name} さんの ${submission.yearMonth} の提出（提出ID:${submission.id}）を編集中です。`;
+        {
+          const heroSelectedSubmissionEl = document.getElementById("heroSelectedSubmission");
+          if (heroSelectedSubmissionEl) heroSelectedSubmissionEl.textContent = `提出ID:${submission.id}`;
+        }
+      badge.textContent = "編集中";
+      badge.className = "badge primary";
+    }
+
+    function getSelectedSubmission() {
+      const id = Number(adminSubmissionSelect.value);
+      return adminSubmissions.find((s) => s.id === id) || null;
+    }
+
+    function selectSubmissionById(id, options = {}) {
+      const numericId = Number(id);
+      if (!numericId) return;
+      const target = adminSubmissions.find((s) => s.id === numericId) || null;
+      if (!target) return;
+      adminSubmissionSelect.value = String(numericId);
+      renderSubmissionTable();
+      renderDetailPanel(target);
+      renderAdminEditTable(target);
+      if (!options.silent) {
+        show("admin-edit-loaded", { id: target.id, employeeId: target.employeeId, details: (target.details || []).length });
+      }
+    }
+
+    async function loadMonthlyData() {
+      const m = getSelectedYearMonth();
+      try {
+        const [submissionsRes, unsubmittedRes] = await Promise.all([
+          req(`/api/v1/admin/shift-submissions/${m}`),
+          req(`/api/v1/admin/unsubmitted/${m}`)
+        ]);
+        adminSubmissions = submissionsRes.data || [];
+        adminListQuery = "";
+        if (submissionSearchInput) submissionSearchInput.value = "";
+        unsubmittedEmployees = unsubmittedRes.data || [];
+        renderAdminSubmissionOptions();
+        renderMonthlyKpi();
+        renderUnsubmittedList();
+        renderSubmissionTable();
+        if (adminSubmissions[0]) {
+          selectSubmissionById(adminSubmissions[0].id, { silent: true });
+        } else {
+          renderDetailPanel(null);
+          renderAdminEditTable(null);
+        }
+        show("admin-list", { submissions: submissionsRes.data || [], unsubmitted: unsubmittedRes.data || [] });
+      } catch (e) {
+        show("admin-error", e);
+      }
+    }
+
     async function init() {
       const cfg = await getConfigStatusOrNull();
       const me = await getMeOrNull();
       if (cfg && cfg.useAuth && !me) {
-        location.href = "/login.html";
+        location.href = "/";
         return;
       }
       if (me && me.role !== "admin") {
         alert("管理者権限が必要です。");
-        location.href = "/login.html";
+        location.href = "/";
         return;
       }
       if (me) logoutBtn.style.display = "inline-block";
@@ -140,43 +461,53 @@
         .map((m) => `<option value="${m}">${m}月</option>`)
         .join("");
       adminMonth.value = String(now.getMonth() === 11 ? 1 : now.getMonth() + 1);
-      show("init", { role: me?.role ?? "local-dev-admin" });
+      await loadEmployeeMaster();
+      renderDetailPanel(null);
+      renderAdminEditTable(null);
+      renderMonthlyKpi();
+      show("init", { role: me?.role ?? "local-dev-admin", employeeMasterCount: employeeNameById.size });
     }
 
-    document.getElementById("loadAdminBtn").addEventListener("click", async () => {
-      const m = getSelectedYearMonth();
-      try {
-        const res = await req(`/api/v1/admin/shift-submissions/${m}`);
-        adminSubmissions = res.data || [];
-        renderAdminSubmissionOptions();
-        renderAdminEditTable(adminSubmissions[0]);
-        show("admin-list", res);
-      } catch (e) {
-        show("admin-error", e);
-      }
+    document.getElementById("loadAdminBtn").addEventListener("click", loadMonthlyData);
+
+    submissionSearchInput.addEventListener("input", () => {
+      adminListQuery = submissionSearchInput.value || "";
+      renderAdminSubmissionOptions();
+      renderSubmissionTable();
+    });
+
+    submissionSortSelect.addEventListener("change", () => {
+      renderAdminSubmissionOptions();
+      renderSubmissionTable();
+    });
+
+    document.getElementById("submissionListTbody").addEventListener("click", (e) => {
+      const btn = e.target.closest('button[data-role="pick-submission"]');
+      if (!btn) return;
+      selectSubmissionById(btn.dataset.id);
     });
 
     document.getElementById("loadEditTargetBtn").addEventListener("click", () => {
-      const id = Number(adminSubmissionSelect.value);
-      const target = adminSubmissions.find((s) => s.id === id);
+      const target = getSelectedSubmission();
       if (!target) {
         show("admin-edit-error", { message: "編集対象が見つかりません" });
         return;
       }
       renderAdminEditTable(target);
-      show("admin-edit-loaded", { id: target.id, details: target.details.length });
+      renderDetailPanel(target);
+      renderSubmissionTable();
+      show("admin-edit-loaded", { id: target.id, employeeId: target.employeeId, details: (target.details || []).length });
     });
 
     document.getElementById("saveEditBtn").addEventListener("click", async () => {
-      const id = Number(adminSubmissionSelect.value);
-      const target = adminSubmissions.find((s) => s.id === id);
+      const target = getSelectedSubmission();
       if (!target) {
         show("admin-edit-error", { message: "編集対象が見つかりません" });
         return;
       }
-      const details = target.details.map((d) => {
+      const details = (target.details || []).map((d) => {
         const start = adminEditTbody.querySelector(`select[data-role="admin-start"][data-date="${d.targetDate}"]`)?.value || "09:00";
-        const end = adminEditTbody.querySelector(`select[data-role="admin-end"][data-date="${d.targetDate}"]`)?.value || "17:00";
+        const end = adminEditTbody.querySelector(`select[data-role="admin-end"][data-date="${d.targetDate}"]`)?.value || "16:00";
         return { targetDate: d.targetDate, availability: d.availability, memo: `${start}-${end}` };
       });
       const invalid = details.filter((d) => {
@@ -188,6 +519,7 @@
         return;
       }
       try {
+        const id = Number(target.id);
         const res = await req(`/api/v1/admin/shift-submissions/by-id/${id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -195,7 +527,9 @@
         });
         const idx = adminSubmissions.findIndex((s) => s.id === id);
         if (idx >= 0) adminSubmissions[idx] = res.data;
-        renderAdminEditTable(res.data);
+        renderAdminSubmissionOptions();
+        selectSubmissionById(id, { silent: true });
+        renderDetailPanel(res.data);
         show("admin-edit-saved", res);
       } catch (e) {
         show("admin-edit-error", e);
@@ -206,9 +540,21 @@
       try {
         const jobs = await req("/api/v1/admin/sync-jobs");
         const last = jobs.data?.[0];
-        if (!last) return show("sync-jobs", jobs);
+        if (!last) {
+          show("sync-jobs", jobs);
+          return;
+        }
         const detail = await req(`/api/v1/admin/sync-jobs/${last.id}`);
         show("sync-last-job-detail", detail);
+      } catch (e) {
+        show("sync-jobs-error", e);
+      }
+    });
+
+    document.getElementById("loadSyncListBtn").addEventListener("click", async () => {
+      try {
+        const jobs = await req("/api/v1/admin/sync-jobs");
+        show("sync-jobs", jobs);
       } catch (e) {
         show("sync-jobs-error", e);
       }
@@ -218,7 +564,7 @@
       try {
         await req("/api/v1/auth/logout", { method: "POST" });
       } catch (_) {}
-      location.href = "/login.html";
+      location.href = "/";
     });
 
     init().catch((e) => show("init-error", e));

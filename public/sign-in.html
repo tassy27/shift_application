@@ -3,25 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>login | Shift Aggregation</title>
+  <title>sign in | Shift Aggregation</title>
   <link rel="stylesheet" href="/css/app.css" />
 </head>
 <body>
   <div class="wrap" style="max-width: 860px;">
     <header class="page-hero">
       <div>
-        <h1>login <span class="pill">認証</span></h1>
-        <p class="subtext">登録済みのメールアドレスと氏名（漢字・カナ）を入力してログインします。</p>
+        <h1>sign in <span class="pill">登録</span></h1>
+        <p class="subtext">メールアドレスと氏名（漢字・カナ）を登録します。登録後はタイトル画面に戻って login してください。</p>
       </div>
       <div class="top-nav">
-<button type="button" class="btn btn-secondary" onclick="location.href='/sign-in.html'">sign in画面へ</button>
+<button type="button" class="btn btn-secondary" onclick="location.href='/login.html'">login画面へ</button>
       </div>
     </header>
 
-    <section class="card">
+    <section class="card" id="formCard">
       <div class="section-title">
-        <h2>ログイン情報</h2>
-        <span class="badge primary">メール + 氏名</span>
+        <h2>登録情報</h2>
+        <span class="badge primary">DB登録</span>
       </div>
       <div class="field-group">
         <label for="email">メールアドレス</label>
@@ -36,10 +36,20 @@
         <input id="fullNameKana" type="text" placeholder="ヤマダ タロウ" />
       </div>
       <div class="btn-row-2">
-        <button id="loginBtn" type="button" class="btn btn-primary">login</button>
+        <button id="submitBtn" type="button" class="btn btn-primary">登録する</button>
         <button type="button" class="btn btn-secondary" onclick="location.href='/'">キャンセル</button>
       </div>
       <p id="errorText" class="hint" style="margin-top:10px; color:#b91c1c; display:none;"></p>
+    </section>
+
+    <section class="card hidden" id="doneCard">
+      <div class="result-banner">
+        <p class="result-title">登録しました</p>
+        <p class="subtext" style="margin:0; color:inherit;">続けてログインする場合はタイトル画面から login を選択してください。</p>
+      </div>
+      <div class="btn-row-2" style="margin-top:12px;">
+<button type="button" class="btn btn-secondary" onclick="location.href='/login.html'">login画面へ進む</button>
+      </div>
     </section>
 
     <section class="card">
@@ -54,6 +64,8 @@
     const fullName = document.getElementById('fullName');
     const fullNameKana = document.getElementById('fullNameKana');
     const errorText = document.getElementById('errorText');
+    const formCard = document.getElementById('formCard');
+    const doneCard = document.getElementById('doneCard');
 
     function show(label, data) { out.textContent = `[${label}]\n` + JSON.stringify(data, null, 2); }
     function setError(msg) {
@@ -61,7 +73,7 @@
       errorText.style.display = msg ? 'block' : 'none';
     }
 
-    document.getElementById('loginBtn').addEventListener('click', async () => {
+    document.getElementById('submitBtn').addEventListener('click', async () => {
       setError('');
       const payload = {
         email: email.value.trim(),
@@ -69,20 +81,17 @@
         fullNameKana: fullNameKana.value.trim(),
       };
       try {
-        const res = await req('/api/v1/auth/name-login', {
+        const res = await req('/api/v1/auth/sign-in', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
-        show('login-success', res);
-        if (res?.data?.role === 'admin') {
-          location.href = '/admin.html';
-          return;
-        }
-        location.href = '/employee.html';
+        show('sign-in-success', res);
+        formCard.classList.add('hidden');
+        doneCard.classList.remove('hidden');
       } catch (e) {
-        show('login-error', e);
-        setError(e?.body?.error?.message || 'ログインに失敗しました。入力内容を確認してください。');
+        show('sign-in-error', e);
+        setError(e?.body?.error?.message || '登録に失敗しました');
       }
     });
   </script>

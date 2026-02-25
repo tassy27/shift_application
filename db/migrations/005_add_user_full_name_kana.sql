@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS full_name_kana VARCHAR(100);
+
+COMMIT;

@@ -1,4 +1,4 @@
-﻿import { Pool, type PoolClient, type QueryResultRow } from "pg";
+import { Pool, type PoolClient, type QueryResultRow } from "pg";
 import crypto from "crypto";
 import type { components } from "../../spec/generated/openapi-types";
 import { loadAppConfig } from "./config";
@@ -457,8 +457,16 @@ export async function registerLocalUser(input: {
   email: string;
   role: "admin" | "employee";
   fullName: string;
-  passwordHash: string;
-}): Promise<{ id: number; email: string; role: "admin" | "employee"; employeeId: number | null; fullName: string }> {
+  fullNameKana?: string | null;
+  passwordHash?: string | null;
+}): Promise<{
+  id: number;
+  email: string;
+  role: "admin" | "employee";
+  employeeId: number | null;
+  fullName: string;
+  fullNameKana: string | null;
+}> {
   return withTx(async (client) => {
     const existing = await client.query<{ id: number }>(`SELECT id FROM users WHERE email=$1 LIMIT 1`, [
       input.email,
@@ -474,13 +482,14 @@ export async function registerLocalUser(input: {
       role: "admin" | "employee";
       employee_id: number | null;
       full_name: string | null;
+      full_name_kana: string | null;
     }>(
       `
-        INSERT INTO users (google_sub, email, role, full_name, password_hash, auth_provider, last_login_at)
-        VALUES ($1,$2,$3,$4,$5,'local',NOW())
-        RETURNING id, email, role, employee_id, full_name
+        INSERT INTO users (google_sub, email, role, full_name, full_name_kana, password_hash, auth_provider, last_login_at)
+        VALUES ($1,$2,$3,$4,$5,$6,'local',NOW())
+        RETURNING id, email, role, employee_id, full_name, full_name_kana
       `,
-      [sub, input.email, input.role, input.fullName, input.passwordHash]
+      [sub, input.email, input.role, input.fullName, input.fullNameKana ?? null, input.passwordHash ?? null]
     );
     const user = createdUser.rows[0];
     const employeeId = await resolveOrCreateEmployeeIdByName(client, {
@@ -497,6 +506,7 @@ export async function registerLocalUser(input: {
       role: user.role,
       employeeId,
       fullName: user.full_name ?? input.fullName,
+      fullNameKana: user.full_name_kana ?? input.fullNameKana ?? null,
     };
   });
 }
@@ -507,6 +517,7 @@ export async function findLocalUserByEmail(input: { email: string }): Promise<{
   role: "admin" | "employee";
   employeeId: number | null;
   fullName: string;
+  fullNameKana: string | null;
   passwordHash: string | null;
 } | null> {
   const rows = await query<{
@@ -515,10 +526,11 @@ export async function findLocalUserByEmail(input: { email: string }): Promise<{
     role: "admin" | "employee";
     employee_id: number | null;
     full_name: string | null;
+    full_name_kana: string | null;
     password_hash: string | null;
   }>(
     `
-      SELECT id, email, role, employee_id, full_name, password_hash
+      SELECT id, email, role, employee_id, full_name, full_name_kana, password_hash
       FROM users
       WHERE lower(email)=lower($1)
       LIMIT 1
@@ -532,10 +544,54 @@ export async function findLocalUserByEmail(input: { email: string }): Promise<{
     role: rows[0].role,
     employeeId: rows[0].employee_id,
     fullName: rows[0].full_name ?? rows[0].email,
+    fullNameKana: rows[0].full_name_kana ?? null,
     passwordHash: rows[0].password_hash,
   };
 }
 
+export async function findLocalUserByIdentity(input: {
+  email: string;
+  fullName: string;
+  fullNameKana: string;
+}): Promise<{
+  id: number;
+  email: string;
+  role: "admin" | "employee";
+  employeeId: number | null;
+  fullName: string;
+  fullNameKana: string | null;
+  passwordHash: string | null;
+} | null> {
+  const rows = await query<{
+    id: number;
+    email: string;
+    role: "admin" | "employee";
+    employee_id: number | null;
+    full_name: string | null;
+    full_name_kana: string | null;
+    password_hash: string | null;
+  }>(
+    `
+      SELECT id, email, role, employee_id, full_name, full_name_kana, password_hash
+      FROM users
+      WHERE lower(email)=lower($1)
+        AND full_name=$2
+        AND full_name_kana=$3
+      LIMIT 1
+    `,
+    [input.email, input.fullName, input.fullNameKana]
+  );
+  if (!rows[0]) return null;
+  return {
+    id: rows[0].id,
+    email: rows[0].email,
+    role: rows[0].role,
+    employeeId: rows[0].employee_id,
+    fullName: rows[0].full_name ?? rows[0].email,
+    fullNameKana: rows[0].full_name_kana ?? null,
+    passwordHash: rows[0].password_hash,
+  };
+}
 export async function ensureEmployeeForUser(userId: number): Promise<number | null> {
   return withTx(async (client) => {
     const rows = await client.query<{
@@ -703,9 +759,9 @@ export async function ensureBootstrapData(): Promise<void> {
     await query(
       `
         INSERT INTO users
-          (google_sub, email, role, employee_id, full_name, password_hash, auth_provider, last_login_at)
+          (google_sub, email, role, employee_id, full_name, full_name_kana, password_hash, auth_provider, last_login_at)
         VALUES
-          ('local:admin.demo@example.com','admin.demo@example.com','admin',$1,'仮管理者',$2,'local',NOW())
+          ('local:admin.demo@example.com','admin.demo@example.com','admin',$1,'仮管理者','カリカンリシャ',$2,'local',NOW())
       `,
       [adminEmployeeId, seedPasswordHash("Admin1234!")]
     );
@@ -713,7 +769,7 @@ export async function ensureBootstrapData(): Promise<void> {
   await query(
     `
       UPDATE users
-      SET role='admin', employee_id=$1, full_name=COALESCE(full_name, 'admin demo')
+      SET role='admin', employee_id=$1, full_name=COALESCE(full_name, 'admin demo'), full_name_kana=COALESCE(full_name_kana, 'カリカンリシャ')
       WHERE lower(email)=lower('admin.demo@example.com')
     `,
     [adminEmployeeId]

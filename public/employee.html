@@ -8,50 +8,107 @@
 </head>
 <body>
   <div class="wrap">
-    <header class="page-header">
-      <h1>シフト申請画面 <span class="pill">Employee</span></h1>
-      <p class="subtext">対象年月を選び、勤務可能日と時間を入力して提出します。</p>
-      <div class="top-nav">
-        <button type="button" onclick="location.href='/login.html'">ログイン画面</button>
-        <button id="goAdminBtn" type="button" onclick="location.href='/admin.html'" style="display:none;">管理者画面</button>
-        <button id="logoutBtn" type="button" style="display:none;">ログアウト</button>
+    <header class="page-hero">
+      <div class="hero-grid">
+        <div>
+          <h1>シフト申請 <span class="pill">Employee</span></h1>
+          <p class="subtext">対象月の勤務可能日を選択し、時間を入力します。送信は次の確認画面で行います。</p>
+          <div class="stepper" aria-label="申請ステップ">
+            <div class="step is-active">
+              <div class="step-index">1</div>
+              <div class="step-title">入力</div>
+              <div class="step-desc">日付・時間を設定</div>
+            </div>
+            <div class="step">
+              <div class="step-index">2</div>
+              <div class="step-title">確認</div>
+              <div class="step-desc">内容を最終確認</div>
+            </div>
+            <div class="step">
+              <div class="step-index">3</div>
+              <div class="step-title">完了</div>
+              <div class="step-desc">提出IDを確認</div>
+            </div>
+          </div>
+          <div class="top-nav">
+<button id="goAdminBtn" type="button" class="btn btn-secondary" onclick="location.href='/admin.html'" style="display:none;">管理者画面</button>
+            <button id="logoutBtn" type="button" class="btn btn-secondary" style="display:none;">ログアウト</button>
+          </div>
+        </div>
       </div>
     </header>
 
-    <section class="card">
-      <h2>申請入力</h2>
-      <div class="row">
-        <div><label>対象年</label><select id="year"></select></div>
-        <div><label>対象月</label><select id="month"></select></div>
-      </div>
-      <div>
-        <div><label>申請者</label><input id="employeeView" readonly /></div>
-      </div>
-      <div>
-        <label>日付ごとの希望時間（チェックで 09:00〜16:00 を自動入力）</label>
-        <div class="table-wrap" style="max-height: 360px;">
-          <table>
-            <thead>
-              <tr>
-                <th>選択</th>
-                <th>日付</th>
-                <th>開始</th>
-                <th>終了</th>
-              </tr>
-            </thead>
-            <tbody id="daysTbody"></tbody>
-          </table>
+    <div class="panel-grid">
+      <section class="card">
+        <div class="section-title">
+          <h2>1. 申請対象と入力ルール</h2>
+          <span class="badge primary">既定時間 09:00-16:00</span>
         </div>
+        <div class="row">
+          <div>
+            <label for="year">対象年</label>
+            <select id="year"></select>
+          </div>
+          <div>
+            <label for="month">対象月</label>
+            <select id="month"></select>
+          </div>
+        </div>
+        <div class="field-group">
+          <label for="employeeView">申請者（送信対象）</label>
+          <input id="employeeView" readonly />
+        </div>
+        <div class="muted-box">
+          <div class="hint">勘違い防止</div>
+          <div style="font-size:13px; line-height:1.45; margin-top:4px;">この画面で表示している申請者名の内容が提出されます。日付にチェックを入れると、時間は <strong>09:00-16:00</strong> が自動で入ります。</div>
+        </div>
+      </section>
+    </div>
+
+    <section class="card">
+      <div class="section-title">
+        <h2>2. 日付ごとの希望時間</h2>
+        <div class="hint">チェックした日だけ提出対象になります</div>
       </div>
-      <label>備考</label>
-      <textarea id="note" rows="2" placeholder="何かあればここにご記入ください"></textarea>
-      <div class="btn-row-3">        <button id="clearBtn" type="button">全解除</button>
-        <button id="submitBtn">確認画面へ進む</button>
+      <div class="table-wrap" style="max-height: 420px;">
+        <table class="table-compact">
+          <thead>
+            <tr>
+              <th style="width:72px;">選択</th>
+              <th>日付</th>
+              <th style="width:140px;">開始</th>
+              <th style="width:140px;">終了</th>
+            </tr>
+          </thead>
+          <tbody id="daysTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+      <section class="card">
+        <div class="field-group" style="margin-bottom:0;">
+          <label for="note">備考</label>
+          <textarea id="note" rows="3" placeholder="何かあればここにご記入ください"></textarea>
+          <div class="hint" style="margin-top:6px;">管理者に共有したい補足のみ記入してください。空欄でも提出できます。</div>
+        </div>
+      </section>
+
+    <section class="card action-bar">
+      <div class="section-title" style="margin-bottom:8px;">
+        <h3>3. 次の操作</h3>
+        <div id="actionHint" class="hint">日付を選択してから確認画面へ進みます</div>
+      </div>
+      <div class="btn-row-2">
+        <button id="clearBtn" type="button" class="btn btn-danger">選択を全解除</button>
+        <button id="submitBtn" type="button" class="btn btn-primary">確認画面へ進む</button>
       </div>
     </section>
 
     <section class="card">
-      <h2>レスポンス</h2>
+      <div class="section-title">
+        <h2>デバッグ情報</h2>
+        <div class="hint">開発用（問題切り分け時のみ確認）</div>
+      </div>
       <pre id="out">読み込み中...</pre>
     </section>
   </div>
@@ -69,7 +126,7 @@
     let me = null;
 
     function show(label, data) {
-      out.textContent = `[${label}]\\n` + JSON.stringify(data, null, 2);
+      out.textContent = `[${label}]\n` + JSON.stringify(data, null, 2);
     }
 
     function selectedYearMonth() {
@@ -109,6 +166,42 @@
       sessionStorage.removeItem(DRAFT_KEY);
     }
 
+    function parseHours(memo) {
+      if (!memo || !memo.includes("-")) return 0;
+      const [s, e] = memo.split("-");
+      const [sh, sm] = s.split(":").map(Number);
+      const [eh, em] = e.split(":").map(Number);
+      if ([sh, sm, eh, em].some((v) => !Number.isFinite(v))) return 0;
+      const minutes = eh * 60 + em - (sh * 60 + sm);
+      return Math.max(0, minutes / 60);
+    }
+
+    function updateSelectionSummary() {
+      const { selected, details } = collectSelectedDetails();
+      const totalHours = details.reduce((sum, d) => sum + parseHours(d.memo), 0);
+      const invalid = details.some((d) => {
+        const [s, e] = d.memo.split("-");
+        return s >= e;
+      });
+      const ym = selectedYearMonth();
+
+      const heroYearMonthEl = document.getElementById("heroYearMonth");
+      if (heroYearMonthEl) heroYearMonthEl.textContent = ym;
+      document.getElementById("selectedDaysCount").textContent = `${selected.length}日`;
+      document.getElementById("selectedHoursTotal").textContent = `${totalHours.toFixed(1).replace(/\.0$/, "") }時間`;
+
+      const actionHint = document.getElementById("actionHint");
+      if (selected.length === 0) {
+        actionHint.textContent = "日付を選択してから確認画面へ進みます";
+        return;
+      }
+      if (invalid) {
+        actionHint.textContent = "終了時間は開始時間より後に設定してください";
+        return;
+      }
+      actionHint.textContent = `${selected.length}日分の内容を確認画面で最終チェックします`;
+    }
+
     function applyDraft(draft) {
       if (!draft || !Array.isArray(draft.details)) return;
       const y = Number(draft.year);
@@ -121,6 +214,7 @@
         const chk = daysTbody.querySelector(`input[data-role="enabled"][data-date="${d.targetDate}"]`);
         const start = daysTbody.querySelector(`select[data-role="start"][data-date="${d.targetDate}"]`);
         const end = daysTbody.querySelector(`select[data-role="end"][data-date="${d.targetDate}"]`);
+        const status = daysTbody.querySelector(`span[data-role="status"][data-date="${d.targetDate}"]`);
         if (!chk || !start || !end) continue;
         chk.checked = true;
         start.disabled = false;
@@ -130,7 +224,9 @@
           start.value = s;
           end.value = e;
         }
+        if (status) status.textContent = "選択中";
       }
+      updateSelectionSummary();
     }
 
     function renderDays() {
@@ -142,13 +238,15 @@
         const date = `${y}-${pad2(m)}-${pad2(d)}`;
         const wd = new Date(y, m - 1, d).getDay();
         const wdLabel = ["日", "月", "火", "水", "木", "金", "土"][wd];
-        const wdColor = wd === 0 ? "#b32d2d" : wd === 6 ? "#224f9b" : "#1d2a39";
+        const wdColor = wd === 0 ? "#b91c1c" : wd === 6 ? "#1d4ed8" : "#1f2937";
         rows.push(`
           <tr>
             <td style="text-align:center;">
-              <input type="checkbox" data-role="enabled" data-date="${date}" data-weekday="${wd}">
+              <input type="checkbox" data-role="enabled" data-date="${date}" data-weekday="${wd}" aria-label="${date} を選択">
             </td>
-            <td>${toMonthDay(date)} <span style="color:${wdColor};">(${wdLabel})</span></td>
+            <td>
+              <div class="line-main">${toMonthDay(date)} <span style="color:${wdColor};">(${wdLabel})</span></div>
+            </td>
             <td>
               <select data-role="start" data-date="${date}" disabled>${buildTimeOptions("09:00")}</select>
             </td>
@@ -159,6 +257,7 @@
         `);
       }
       daysTbody.innerHTML = rows.join("");
+      updateSelectionSummary();
     }
 
     function renderMonthsByYear() {
@@ -172,12 +271,15 @@
       const cfg = await getConfigStatusOrNull();
       me = await getMeOrNull();
       if (cfg && cfg.useAuth && !me) {
-        location.href = "/login.html";
+        location.href = "/";
         return;
       }
       if (me && me.role === "admin") goAdminBtn.style.display = "inline-block";
       if (me) logoutBtn.style.display = "inline-block";
-      employeeView.value = me ? `${me.name || me.email}` : "local-dev";
+      const meLabel = me ? `${me.name || me.email}` : "local-dev";
+      employeeView.value = meLabel;
+      const heroEmployeeNameEl = document.getElementById("heroEmployeeName");
+      if (heroEmployeeNameEl) heroEmployeeNameEl.textContent = meLabel;
       const now = new Date();
       const years = [now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1, now.getFullYear() + 2];
       year.innerHTML = years.map((y) => `<option value="${y}">${y}年</option>`).join("");
@@ -186,6 +288,7 @@
       month.value = String(now.getMonth() === 11 ? 1 : now.getMonth() + 1);
       renderDays();
       applyDraft(loadDraft());
+      updateSelectionSummary();
       show("init", { role: me?.role ?? "local-dev-admin" });
     }
 
@@ -193,22 +296,51 @@
     month.addEventListener("change", () => {
       renderDays();
       clearDraft();
+      updateSelectionSummary();
     });
+
     daysTbody.addEventListener("change", (e) => {
       const t = e.target;
-      if (!t || t.dataset.role !== "enabled") return;
+      if (!t) return;
       const date = t.dataset.date;
+      if (!date) return;
       const start = daysTbody.querySelector(`select[data-role="start"][data-date="${date}"]`);
       const end = daysTbody.querySelector(`select[data-role="end"][data-date="${date}"]`);
-      if (t.checked) {
-        start.disabled = false;
-        end.disabled = false;
-        start.value = "09:00";
-        end.value = "16:00";
-      } else {
-        start.disabled = true;
-        end.disabled = true;
+      const status = daysTbody.querySelector(`span[data-role="status"][data-date="${date}"]`);
+
+      if (t.dataset.role === "enabled") {
+        if (t.checked) {
+          start.disabled = false;
+          end.disabled = false;
+          start.value = "09:00";
+          end.value = "16:00";
+          if (status) {
+            status.textContent = "選択中";
+            status.className = "badge success";
+          }
+        } else {
+          start.disabled = true;
+          end.disabled = true;
+          if (status) {
+            status.textContent = "未選択";
+            status.className = "badge";
+          }
+        }
       }
+
+      if (t.dataset.role === "start" || t.dataset.role === "end") {
+        if (status) {
+          if (start.value < end.value) {
+            status.textContent = "時間設定済み";
+            status.className = "badge success";
+          } else {
+            status.textContent = "要確認";
+            status.className = "badge danger";
+          }
+        }
+      }
+
+      updateSelectionSummary();
     });
 
     document.getElementById("clearBtn").addEventListener("click", () => {
@@ -217,14 +349,20 @@
         const date = chk.dataset.date;
         const start = daysTbody.querySelector(`select[data-role="start"][data-date="${date}"]`);
         const end = daysTbody.querySelector(`select[data-role="end"][data-date="${date}"]`);
+        const status = daysTbody.querySelector(`span[data-role="status"][data-date="${date}"]`);
         chk.checked = false;
         start.disabled = true;
         end.disabled = true;
+        if (status) {
+          status.textContent = "未選択";
+          status.className = "badge";
+        }
       }
       clearDraft();
+      updateSelectionSummary();
     });
 
-    document.getElementById("submitBtn").addEventListener("click", async () => {
+    document.getElementById("submitBtn").addEventListener("click", () => {
       const { selected, details } = collectSelectedDetails();
       if (selected.length === 0) {
         show("submit-error", { message: "少なくとも1日チェックしてください" });
@@ -236,6 +374,7 @@
       });
       if (invalid.length > 0) {
         show("submit-error", { message: "終了時間は開始時間より後にしてください", invalidDates: invalid.map((v) => v.targetDate) });
+        updateSelectionSummary();
         return;
       }
       saveDraft({
@@ -253,12 +392,11 @@
         await req("/api/v1/auth/logout", { method: "POST" });
       } catch (_) {}
       clearDraft();
-      location.href = "/login.html";
+      location.href = "/";
     });
 
     init().catch((e) => show("init-error", e));
   </script>
 </body>
 </html>
-
 
